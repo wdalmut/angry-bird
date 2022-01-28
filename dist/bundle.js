@@ -26492,7 +26492,7 @@ function getBird() {
 
 module.exports = {
   createBird: () => {
-    const rockOptions = {
+    const birdOptions = {
       density: 0.004,
       label: `bird${parseInt(Math.random()*1e6)}`,
       render: {
@@ -26504,12 +26504,29 @@ module.exports = {
       }
     }
   
-    let rock = Bodies.polygon(220, 450, 8, 20, rockOptions)
+    let bird = Bodies.polygon(220, 450, 8, 20, birdOptions)
 
-    return rock
+    console.debug("bird", bird.position)
+
+    return bird
   }
 }
 },{"matter-js":1}],345:[function(require,module,exports){
+const Box = require('./box')
+
+module.exports = {
+  generate: num => {
+    let boxes = Array.apply(null, new Array(num)).map((_, i) => {
+      x = 450 + Math.random() * 200
+      y = 200 + Math.random() * 100
+      const box = Box.createBox(x, y, {label: `box${i}`})
+      return box
+    })
+
+    return boxes
+  }
+}
+},{"./box":346}],346:[function(require,module,exports){
 const R = require('ramda')
 const Matter = require('matter-js')
 
@@ -26542,14 +26559,13 @@ module.exports = {
     box.render = R.assocPath(['sprite', 'texture'], 'images/explode.png', box.render)
   },
 }
-},{"matter-js":1,"ramda":89}],346:[function(require,module,exports){
+},{"matter-js":1,"ramda":89}],347:[function(require,module,exports){
 const  R = require('ramda')
 
 module.exports = {
   onlyBirdBoxCollision: R.compose(
     R.identity,
     R.test(/((bird\d+)(box\d+))|((box\d+)(bird\d+))/i),
-    R.tap(console.log),
     R.converge(
       R.concat,
       [
@@ -26559,7 +26575,7 @@ module.exports = {
     )
   ),
 }
-},{"ramda":89}],347:[function(require,module,exports){
+},{"ramda":89}],348:[function(require,module,exports){
 const R = require('ramda')
 const Matter = require('matter-js')
 
@@ -26577,21 +26593,23 @@ const Engine = Matter.Engine,
 
 const Bird = require('./bird')
 const Box = require('./box')
-const CollisionHelper = require('./collision')
+const BoxGenerator = require('./box-generator')
+const CollisionHelper = require('./collision');
+const compose = require('ramda/src/compose');
 
 window.onload = function() {
   // create engine
-  var engine = Engine.create(),
+  const engine = Engine.create(),
     world = engine.world;
 
   // create renderer
-  var render = Render.create({
+  const render = Render.create({
     element: document.body,
     engine: engine,
     options: {
       width: 800,
       height: 600,
-      showAngleIndicator: true,
+      showAngleIndicator: false,
       wireframes: false
     },
   });
@@ -26603,10 +26621,10 @@ window.onload = function() {
   Runner.run(runner, engine);
 
   // add bodies
-  const ground = Bodies.rectangle(395, 600, 815, 50, {
+  const ground = Bodies.rectangle(395, 600, 8015, 50, {
     label: 'ground',
     isStatic: true,
-    render: { fillStyle: "#060a19" },
+    render: { fillStyle: "#F00" },
   })
   let bird = Bird.createBird()
 
@@ -26619,18 +26637,31 @@ window.onload = function() {
 
   const ground2 = Bodies.rectangle(550, 500, 200, 20, { label: 'ground2', isStatic: true, render: { fillStyle: '#060a19' } });
 
-  let boxes = Array.apply(null, new Array(5)).map((_, i) => {
-    x = 450 + Math.random() * 200
-    y = 200 + Math.random() * 100
-    const box = Box.createBox(x, y, {label: `box${i}`})
-    return box
-  })
-
+  let boxes = BoxGenerator.generate(5)
 
   Composite.add(engine.world, [ground, ground2, bird, elastic].concat(boxes));
 
+  let follow = false
+  Events.on(render, 'beforeRender', function() {
+    if (!follow) {
+      // fit the render viewport to the scene
+      Render.lookAt(render, {
+        min: { x: 0, y: 0 },
+        max: { x: 800, y: 600 }
+      });
+    } else {
+      // fit the render viewport to the scene
+      Render.lookAt(render, {
+        min: { x: 0, y: 0 },
+        max: { x: 800+follow.position.x-252, y: 600 }
+      });
+    }
+  })
+
   Events.on(engine, 'afterUpdate', function() {
     if (mouseConstraint.mouse.button === -1 && (bird.position.x > 250)) {
+      Events.trigger(engine, 'birdFlying', bird)
+
       bird = Bird.createBird()
       elastic.bodyB = bird
       Composite.add(engine.world, bird);
@@ -26639,7 +26670,7 @@ window.onload = function() {
 
   Events.on(engine, 'collisionStart', function(event) {
     let pairs = event.pairs
-    if (pairs.length) {
+    if (pairs.length===1) {
       pairs = R.filter(CollisionHelper.onlyBirdBoxCollision, pairs)
       if (pairs.length) {
         Events.trigger(engine, 'birdCollision', event)
@@ -26647,9 +26678,25 @@ window.onload = function() {
     }
   })
 
+  Events.on(engine, 'emptyWorld', world => {
+    let birds = R.filter(R.compose(R.test(/bird/i), R.prop('label')), world.bodies)
+    birds = R.filter(R.compose(R.not, R.equals(elastic.bodyB.label), R.prop('label')), birds)
+    birds.map(bird => Composite.remove(world, bird)) 
+  })
+
+  Events.on(engine, 'boxExplosion', world => {
+    const boxes = R.filter(R.compose(R.test(/box/i), R.prop('label')), world.bodies)
+    
+    if (boxes.length === 0) {
+      Events.trigger(engine, 'emptyWorld', world)
+      let boxes = BoxGenerator.generate(5)
+
+      Composite.add(world, boxes);    
+    }
+  })
+
   Events.on(engine, 'birdCollision', event => {
     event.pairs.map(pair => {
-      console.log(pair)
       const explodingBox = R.ifElse(
         R.compose(R.test(/bird/i), R.path(['bodyA', 'label'])),
         R.prop('bodyB'),
@@ -26659,9 +26706,17 @@ window.onload = function() {
       Box.explode(explodingBox)
       setTimeout(() => {
         Composite.remove(event.source.world, explodingBox)
+        Events.trigger(engine, 'boxExplosion', engine.world)
       }, 600)
     })
     
+  })
+
+  Events.on(engine, 'birdFlying', bird => {
+    follow = bird
+    setTimeout(() => {
+      follow = false
+    }, 2000)
   })
 
   // add mouse control
@@ -26680,11 +26735,5 @@ window.onload = function() {
 
   // keep the mouse in sync with rendering
   render.mouse = mouse;
-
-  // fit the render viewport to the scene
-  Render.lookAt(render, {
-      min: { x: 0, y: 0 },
-      max: { x: 800, y: 600 }
-  });
 }
-},{"./bird":344,"./box":345,"./collision":346,"matter-js":1,"ramda":89}]},{},[347]);
+},{"./bird":344,"./box":346,"./box-generator":345,"./collision":347,"matter-js":1,"ramda":89,"ramda/src/compose":34}]},{},[348]);

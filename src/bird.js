@@ -12,7 +12,7 @@ function getBird() {
 
 module.exports = {
   createBird: () => {
-    const rockOptions = {
+    const birdOptions = {
       density: 0.004,
       label: `bird${parseInt(Math.random()*1e6)}`,
       render: {
@@ -24,8 +24,10 @@ module.exports = {
       }
     }
   
-    let rock = Bodies.polygon(220, 450, 8, 20, rockOptions)
+    let bird = Bodies.polygon(220, 450, 8, 20, birdOptions)
 
-    return rock
+    console.debug("bird", bird.position)
+
+    return bird
   }
 }
