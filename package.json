@@ -12,7 +12,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "matter-js": "^0.18.0"
+    "matter-js": "^0.18.0",
+    "ramda": "^0.28.0"
   },
   "devDependencies": {
     "browserify": "^17.0.0",

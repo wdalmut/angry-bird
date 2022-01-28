@@ -1,3 +1,4 @@
+const R = require('ramda')
 const Matter = require('matter-js')
 
 const Engine = Matter.Engine,
@@ -9,23 +10,12 @@ const Engine = Matter.Engine,
     MouseConstraint = Matter.MouseConstraint,
     Mouse = Matter.Mouse,
     Composite = Matter.Composite,
+    Detector = Matter.Detector,
     Bodies = Matter.Bodies;
 
-function getBird() {
-  const birds = [
-    'images/bird.png',
-    'images/bird2.png',
-  ]
-  return birds[parseInt((Math.random()*100))%birds.length]
-}
-
-function getBox() {
-  const boxes = [
-    'images/box.png',
-    'images/box2.png',
-  ]
-  return boxes[parseInt((Math.random()*100))%boxes.length]
-}
+const Bird = require('./bird')
+const Box = require('./box')
+const CollisionHelper = require('./collision')
 
 window.onload = function() {
   // create engine
@@ -52,64 +42,64 @@ window.onload = function() {
 
   // add bodies
   const ground = Bodies.rectangle(395, 600, 815, 50, {
+    label: 'ground',
     isStatic: true,
     render: { fillStyle: "#060a19" },
   })
-  const rockOptions = {
-    density: 0.004,
-    render: {
-      sprite: {
-        texture: getBird(),
-        xScale: 0.2,
-        yScale: 0.2
-      }
-    }
-  }
+  let bird = Bird.createBird()
 
-  let rock = Bodies.polygon(220, 450, 8, 20, rockOptions)
   const anchor = { x: 220, y: 450 }
   const elastic = Constraint.create({
     pointA: anchor,
-    bodyB: rock,
+    bodyB: bird,
     stiffness: 0.05,
   })
 
+  const ground2 = Bodies.rectangle(550, 500, 200, 20, { label: 'ground2', isStatic: true, render: { fillStyle: '#060a19' } });
 
-  const ground2 = Bodies.rectangle(550, 500, 200, 20, { isStatic: true, render: { fillStyle: '#060a19' } });
-
-  let boxes = Array.apply(null, new Array(15)).map(() => {
+  let boxes = Array.apply(null, new Array(5)).map((_, i) => {
     x = 450 + Math.random() * 200
     y = 200 + Math.random() * 100
-    const box = Bodies.rectangle(x, y, 50, 50, {
-      render: {
-        sprite: {
-            texture: getBox(),
-            xScale: 0.2,
-            yScale: 0.2
-        }
-      },
-    })
-    console.log(box)
+    const box = Box.createBox(x, y, {label: `box${i}`})
     return box
   })
 
 
-  Composite.add(engine.world, [ground, ground2, rock, elastic].concat(boxes));
+  Composite.add(engine.world, [ground, ground2, bird, elastic].concat(boxes));
 
   Events.on(engine, 'afterUpdate', function() {
-    if (mouseConstraint.mouse.button === -1 && (rock.position.x > 250)) {
-      rock = Bodies.polygon(170, 450, 7, 20, Object.assign({}, rockOptions, {
-        render: {
-          sprite: {
-            texture: getBird(),
-            xScale: 0.2,
-            yScale: 0.2
-          }
-        }
-      }))
-      elastic.bodyB = rock
-      Composite.add(engine.world, rock);
+    if (mouseConstraint.mouse.button === -1 && (bird.position.x > 250)) {
+      bird = Bird.createBird()
+      elastic.bodyB = bird
+      Composite.add(engine.world, bird);
     }
+  })
+
+  Events.on(engine, 'collisionStart', function(event) {
+    let pairs = event.pairs
+    if (pairs.length) {
+      pairs = R.filter(CollisionHelper.onlyBirdBoxCollision, pairs)
+      if (pairs.length) {
+        Events.trigger(engine, 'birdCollision', event)
+      }
+    }
+  })
+
+  Events.on(engine, 'birdCollision', event => {
+    event.pairs.map(pair => {
+      console.log(pair)
+      const explodingBox = R.ifElse(
+        R.compose(R.test(/bird/i), R.path(['bodyA', 'label'])),
+        R.prop('bodyB'),
+        R.prop('bodyA')
+      )(pair)
+
+      Box.explode(explodingBox)
+      setTimeout(() => {
+        Composite.remove(event.source.world, explodingBox)
+      }, 600)
+    })
+    
   })
 
   // add mouse control
