@@ -33,9 +33,7 @@ module.exports = {
 
     Composite.add(world, boxes); 
   },
-  onBirdCollision: event => {
-    const world = event.source
-    
+  onBirdCollision: R.curry((world, event) => {
     event.pairs.map(pair => {
       const explodingBox = R.ifElse(
         R.compose(R.test(/bird/i), R.path(['bodyA', 'label'])),
@@ -49,8 +47,7 @@ module.exports = {
         Events.trigger(world, 'boxExplosion', world)
       }, 600)
     })
-    
-  },
+  }),
   followTheFlyingBird: R.curry((render, bird) => {
     const follow = () => Render.lookAt(render, {
       min: { x: 0, y: 0 },

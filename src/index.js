@@ -53,9 +53,9 @@ window.onload = function() {
   const anchor = { x: 220, y: 450 }
   const elastic = Elastic.createElastic(anchor, bird)
 
-  const ground2 = Ground.createGround(550, 500, 200, 20, { label: 'ground2', render: { fillStyle: '#060a19' } })
+  const cliff = Ground.createGround(550, 500, 200, 20, { label: 'cliff', render: { fillStyle: '#060a19' } })
 
-  Composite.add(engine.world, [ground, ground2, bird, elastic]);
+  Composite.add(engine.world, [ground, cliff, bird, elastic]);
 
   Events.on(engine, 'afterUpdate', function(event) {
     const world = event.source.world
@@ -74,10 +74,10 @@ window.onload = function() {
     const world = event.source.world
 
     let pairs = event.pairs
-    if (pairs.length===1) {
+    if (pairs.length) {
       pairs = R.filter(CollisionHelper.onlyBirdBoxCollision, pairs)
-      if (pairs.length) {
-        Events.trigger(world, 'birdCollision', event)
+      if (R.length(pairs)) {
+        Events.trigger(world, 'birdCollision', {pairs: pairs})
       }
     }
   })
@@ -87,7 +87,7 @@ window.onload = function() {
   
   Events.on(world, 'boxExplosion', WorldHelper.onBoxExplosion)
 
-  Events.on(world, 'birdCollision', WorldHelper.onBirdCollision)
+  Events.on(world, 'birdCollision', WorldHelper.onBirdCollision(world))
 
   Events.on(world, 'birdFlying', WorldHelper.followTheFlyingBird(render))
 
