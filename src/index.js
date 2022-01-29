@@ -55,6 +55,7 @@ window.onload = function() {
 
   Events.on(engine, 'afterUpdate', function(event) {
     const world = event.source.world
+    const slingshot = Slingshot.getSlingshot(world)
     const elastic = Slingshot.getElastic(world)
     let bird = elastic.bodyB
 

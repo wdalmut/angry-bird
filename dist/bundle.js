@@ -26655,6 +26655,7 @@ window.onload = function() {
 
   Events.on(engine, 'afterUpdate', function(event) {
     const world = event.source.world
+    const slingshot = Slingshot.getSlingshot(world)
     const elastic = Slingshot.getElastic(world)
     let bird = elastic.bodyB
 
@@ -26718,9 +26719,13 @@ const Constraint = Matter.Constraint;
 
 const Bird = require('./bird')
 
+
+const getSlingshot = world => R.find(R.compose(R.equals('slingshot'), R.prop('label')), world.composites)
+
 module.exports = {
+  getSlingshot,
   getElastic: world => {
-    const slingshot = R.find(R.compose(R.equals('slingshot'), R.prop('label')), world.composites)
+    const slingshot = getSlingshot(world)
     const elastic = R.find(R.compose(R.equals('elastic'), R.prop('label')), slingshot.constraints)
 
     return elastic
