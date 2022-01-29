@@ -3,7 +3,7 @@ const Matter = require('matter-js')
 
 const Bodies = Matter.Bodies;
 
-function getBox() {
+function getBoxTexture() {
   const boxes = [
     'images/box.png',
     'images/box2.png'
@@ -17,7 +17,7 @@ module.exports = {
       label: 'box',
       render: {
         sprite: {
-            texture: getBox(),
+            texture: getBoxTexture(),
             xScale: 0.2,
             yScale: 0.2
         }

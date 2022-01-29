@@ -1,13 +1,17 @@
 const R = require('ramda')
 const Matter = require('matter-js')
 
+const Render = Matter.Render
 const Events = Matter.Events
 const Composite = Matter.Composite
 
+const Box = require('./box')
 const BoxGenerator = require('./box-generator')
 
 module.exports = {
-  removeAllBirds: R.curry((elastic, world) => {
+  removeAllBirds: world => {
+    const elastic = R.find(R.compose(R.equals('elastic'), R.prop('label')), world.constraints)
+    
     // grab all birds
     let birds = R.filter(R.compose(R.test(/bird/i), R.prop('label')), world.bodies)
 
@@ -16,11 +20,11 @@ module.exports = {
 
     // drop birds
     birds.map(bird => Composite.remove(world, bird)) 
-  }),
+  },
   onBoxExplosion: world => {
     const boxes = R.filter(R.compose(R.test(/box/i), R.prop('label')), world.bodies)
     
-    if (boxes.length === 0) {
+    if (R.length(boxes) === 0) {
       Events.trigger(world, 'emptyWorld', world)
     }
   },
@@ -28,5 +32,39 @@ module.exports = {
     let boxes = BoxGenerator.generate(5)
 
     Composite.add(world, boxes); 
-  }
+  },
+  onBirdCollision: event => {
+    const world = event.source
+    
+    event.pairs.map(pair => {
+      const explodingBox = R.ifElse(
+        R.compose(R.test(/bird/i), R.path(['bodyA', 'label'])),
+        R.prop('bodyB'),
+        R.prop('bodyA')
+      )(pair)
+
+      Box.explode(explodingBox)
+      setTimeout(() => {
+        Composite.remove(world, explodingBox)
+        Events.trigger(world, 'boxExplosion', world)
+      }, 600)
+    })
+    
+  },
+  followTheFlyingBird: R.curry((render, bird) => {
+    const follow = () => Render.lookAt(render, {
+      min: { x: 0, y: 0 },
+      max: { x: 800+bird.position.x-252, y: 600 }
+    });
+    Events.on(render, 'beforeRender', follow)
+
+    setTimeout(() => {
+      Events.off(render, 'beforeRender', follow)
+      
+      Render.lookAt(render, {
+        min: { x: 0, y: 0 },
+        max: { x: 800, y: 600 }
+      });
+    }, 2000)
+  }),
 }

@@ -56,77 +56,47 @@ window.onload = function() {
     pointA: anchor,
     bodyB: bird,
     stiffness: 0.05,
+    label: 'elastic',
   })
 
   const ground2 = Bodies.rectangle(550, 500, 200, 20, { label: 'ground2', isStatic: true, render: { fillStyle: '#060a19' } });
 
   Composite.add(engine.world, [ground, ground2, bird, elastic]);
 
-  let follow = false
-  Events.on(render, 'beforeRender', function() {
-    if (!follow) {
-      // fit the render viewport to the scene
-      Render.lookAt(render, {
-        min: { x: 0, y: 0 },
-        max: { x: 800, y: 600 }
-      });
-    } else {
-      // fit the render viewport to the scene
-      Render.lookAt(render, {
-        min: { x: 0, y: 0 },
-        max: { x: 800+follow.position.x-252, y: 600 }
-      });
-    }
-  })
+  Events.on(engine, 'afterUpdate', function(event) {
+    const world = event.source.world
+    // const elastic = R.find(R.equals('elastic'), R.path(['constraints', 'label']), world)
+    // console.log(elastic)
 
-  Events.on(engine, 'afterUpdate', function() {
     if (mouseConstraint.mouse.button === -1 && (bird.position.x > 250)) {
-      Events.trigger(engine, 'birdFlying', bird)
+      Events.trigger(world, 'birdFlying', bird)
 
       bird = Bird.createBird()
       elastic.bodyB = bird
-      Composite.add(engine.world, bird);
+      Composite.add(world, bird);
     }
   })
 
   Events.on(engine, 'collisionStart', function(event) {
+    const world = event.source.world
+
     let pairs = event.pairs
     if (pairs.length===1) {
       pairs = R.filter(CollisionHelper.onlyBirdBoxCollision, pairs)
       if (pairs.length) {
-        Events.trigger(engine, 'birdCollision', event)
+        Events.trigger(world, 'birdCollision', event)
       }
     }
   })
 
-  Events.on(world, 'emptyWorld', WorldHelper.removeAllBirds(elastic))
+  Events.on(world, 'emptyWorld', WorldHelper.removeAllBirds)
   Events.on(world, 'emptyWorld', WorldHelper.recreateBoxes)
   
-  Events.on(engine, 'boxExplosion', WorldHelper.onBoxExplosion)
+  Events.on(world, 'boxExplosion', WorldHelper.onBoxExplosion)
 
-  Events.on(engine, 'birdCollision', event => {
-    event.pairs.map(pair => {
-      const explodingBox = R.ifElse(
-        R.compose(R.test(/bird/i), R.path(['bodyA', 'label'])),
-        R.prop('bodyB'),
-        R.prop('bodyA')
-      )(pair)
+  Events.on(world, 'birdCollision', WorldHelper.onBirdCollision)
 
-      Box.explode(explodingBox)
-      setTimeout(() => {
-        Composite.remove(event.source.world, explodingBox)
-        Events.trigger(engine, 'boxExplosion', engine.world)
-      }, 600)
-    })
-    
-  })
-
-  Events.on(engine, 'birdFlying', bird => {
-    follow = bird
-    setTimeout(() => {
-      follow = false
-    }, 2000)
-  })
+  Events.on(world, 'birdFlying', WorldHelper.followTheFlyingBird(render))
 
   // add mouse control
   const mouse = Mouse.create(render.canvas),

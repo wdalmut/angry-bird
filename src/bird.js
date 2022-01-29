@@ -2,7 +2,7 @@ const Matter = require('matter-js')
 
 const Bodies = Matter.Bodies;
 
-function getBird() {
+function getBirdTexture() {
   const birds = [
     'images/bird.png',
     'images/bird2.png',
@@ -17,7 +17,7 @@ module.exports = {
       label: `bird${parseInt(Math.random()*1e6)}`,
       render: {
         sprite: {
-          texture: getBird(),
+          texture: getBirdTexture(),
           xScale: 0.2,
           yScale: 0.2
         }
