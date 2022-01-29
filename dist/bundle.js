@@ -26562,18 +26562,20 @@ module.exports = {
 },{"matter-js":1,"ramda":89}],347:[function(require,module,exports){
 const  R = require('ramda')
 
+const onlyBirdBoxCollision = R.compose(
+  R.identity,
+  R.test(/((bird\d+)(box\d+))|((box\d+)(bird\d+))/i),
+  R.converge(
+    R.concat,
+    [
+      R.path(['bodyA', 'label']),
+      R.path(['bodyB', 'label'])
+    ]
+  )
+)
+
 module.exports = {
-  onlyBirdBoxCollision: R.compose(
-    R.identity,
-    R.test(/((bird\d+)(box\d+))|((box\d+)(bird\d+))/i),
-    R.converge(
-      R.concat,
-      [
-        R.path(['bodyA', 'label']),
-        R.path(['bodyB', 'label'])
-      ]
-    )
-  ),
+  onlyBirdBoxCollision,
 }
 },{"ramda":89}],348:[function(require,module,exports){
 const R = require('ramda')
@@ -26594,8 +26596,9 @@ const Engine = Matter.Engine,
 const Bird = require('./bird')
 const Box = require('./box')
 const BoxGenerator = require('./box-generator')
-const CollisionHelper = require('./collision');
-const compose = require('ramda/src/compose');
+const CollisionHelper = require('./collision')
+const WorldHelper = require('./world')
+const compose = require('ramda/src/compose')
 
 window.onload = function() {
   // create engine
@@ -26637,9 +26640,7 @@ window.onload = function() {
 
   const ground2 = Bodies.rectangle(550, 500, 200, 20, { label: 'ground2', isStatic: true, render: { fillStyle: '#060a19' } });
 
-  let boxes = BoxGenerator.generate(5)
-
-  Composite.add(engine.world, [ground, ground2, bird, elastic].concat(boxes));
+  Composite.add(engine.world, [ground, ground2, bird, elastic]);
 
   let follow = false
   Events.on(render, 'beforeRender', function() {
@@ -26678,22 +26679,10 @@ window.onload = function() {
     }
   })
 
-  Events.on(engine, 'emptyWorld', world => {
-    let birds = R.filter(R.compose(R.test(/bird/i), R.prop('label')), world.bodies)
-    birds = R.filter(R.compose(R.not, R.equals(elastic.bodyB.label), R.prop('label')), birds)
-    birds.map(bird => Composite.remove(world, bird)) 
-  })
-
-  Events.on(engine, 'boxExplosion', world => {
-    const boxes = R.filter(R.compose(R.test(/box/i), R.prop('label')), world.bodies)
-    
-    if (boxes.length === 0) {
-      Events.trigger(engine, 'emptyWorld', world)
-      let boxes = BoxGenerator.generate(5)
-
-      Composite.add(world, boxes);    
-    }
-  })
+  Events.on(world, 'emptyWorld', WorldHelper.removeAllBirds(elastic))
+  Events.on(world, 'emptyWorld', WorldHelper.recreateBoxes)
+  
+  Events.on(engine, 'boxExplosion', WorldHelper.onBoxExplosion)
 
   Events.on(engine, 'birdCollision', event => {
     event.pairs.map(pair => {
@@ -26735,5 +26724,41 @@ window.onload = function() {
 
   // keep the mouse in sync with rendering
   render.mouse = mouse;
+
+
+  Events.trigger(world, 'emptyWorld', world)
 }
-},{"./bird":344,"./box":346,"./box-generator":345,"./collision":347,"matter-js":1,"ramda":89,"ramda/src/compose":34}]},{},[348]);
+},{"./bird":344,"./box":346,"./box-generator":345,"./collision":347,"./world":349,"matter-js":1,"ramda":89,"ramda/src/compose":34}],349:[function(require,module,exports){
+const R = require('ramda')
+const Matter = require('matter-js')
+
+const Events = Matter.Events
+const Composite = Matter.Composite
+
+const BoxGenerator = require('./box-generator')
+
+module.exports = {
+  removeAllBirds: R.curry((elastic, world) => {
+    // grab all birds
+    let birds = R.filter(R.compose(R.test(/bird/i), R.prop('label')), world.bodies)
+
+    // do not drop the bird connected to the slingshot
+    birds = R.filter(R.compose(R.not, R.equals(elastic.bodyB.label), R.prop('label')), birds)
+
+    // drop birds
+    birds.map(bird => Composite.remove(world, bird)) 
+  }),
+  onBoxExplosion: world => {
+    const boxes = R.filter(R.compose(R.test(/box/i), R.prop('label')), world.bodies)
+    
+    if (boxes.length === 0) {
+      Events.trigger(world, 'emptyWorld', world)
+    }
+  },
+  recreateBoxes: world => {
+    let boxes = BoxGenerator.generate(5)
+
+    Composite.add(world, boxes); 
+  }
+}
+},{"./box-generator":345,"matter-js":1,"ramda":89}]},{},[348]);

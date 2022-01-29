@@ -16,8 +16,9 @@ const Engine = Matter.Engine,
 const Bird = require('./bird')
 const Box = require('./box')
 const BoxGenerator = require('./box-generator')
-const CollisionHelper = require('./collision');
-const compose = require('ramda/src/compose');
+const CollisionHelper = require('./collision')
+const WorldHelper = require('./world')
+const compose = require('ramda/src/compose')
 
 window.onload = function() {
   // create engine
@@ -59,9 +60,7 @@ window.onload = function() {
 
   const ground2 = Bodies.rectangle(550, 500, 200, 20, { label: 'ground2', isStatic: true, render: { fillStyle: '#060a19' } });
 
-  let boxes = BoxGenerator.generate(5)
-
-  Composite.add(engine.world, [ground, ground2, bird, elastic].concat(boxes));
+  Composite.add(engine.world, [ground, ground2, bird, elastic]);
 
   let follow = false
   Events.on(render, 'beforeRender', function() {
@@ -100,22 +99,10 @@ window.onload = function() {
     }
   })
 
-  Events.on(engine, 'emptyWorld', world => {
-    let birds = R.filter(R.compose(R.test(/bird/i), R.prop('label')), world.bodies)
-    birds = R.filter(R.compose(R.not, R.equals(elastic.bodyB.label), R.prop('label')), birds)
-    birds.map(bird => Composite.remove(world, bird)) 
-  })
-
-  Events.on(engine, 'boxExplosion', world => {
-    const boxes = R.filter(R.compose(R.test(/box/i), R.prop('label')), world.bodies)
-    
-    if (boxes.length === 0) {
-      Events.trigger(engine, 'emptyWorld', world)
-      let boxes = BoxGenerator.generate(5)
-
-      Composite.add(world, boxes);    
-    }
-  })
+  Events.on(world, 'emptyWorld', WorldHelper.removeAllBirds(elastic))
+  Events.on(world, 'emptyWorld', WorldHelper.recreateBoxes)
+  
+  Events.on(engine, 'boxExplosion', WorldHelper.onBoxExplosion)
 
   Events.on(engine, 'birdCollision', event => {
     event.pairs.map(pair => {
@@ -157,4 +144,7 @@ window.onload = function() {
 
   // keep the mouse in sync with rendering
   render.mouse = mouse;
+
+
+  Events.trigger(world, 'emptyWorld', world)
 }
