@@ -21,11 +21,16 @@ module.exports = {
           xScale: 0.2,
           yScale: 0.2
         }
-      }
+      },
+      collisionFilter: {
+        group: -1,
+        //   category: 0x0002,
+      //   mask: 0x0003,
+      },
     }
   
     let bird = Bodies.polygon(220, 450, 8, 20, birdOptions)
-
+    
     return bird
   }
 }

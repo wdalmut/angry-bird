@@ -6,7 +6,6 @@ const Engine = Matter.Engine,
     Runner = Matter.Runner,
     Composites = Matter.Composites,
     Events = Matter.Events,
-    Constraint = Matter.Constraint,
     MouseConstraint = Matter.MouseConstraint,
     Mouse = Matter.Mouse,
     Composite = Matter.Composite,
@@ -14,14 +13,13 @@ const Engine = Matter.Engine,
     Bodies = Matter.Bodies;
 
 
-const Elastic = require('./elastic')
 const Ground = require('./ground')
 const Bird = require('./bird')
 const Box = require('./box')
 const BoxGenerator = require('./box-generator')
 const CollisionHelper = require('./collision')
 const WorldHelper = require('./world')
-const compose = require('ramda/src/compose')
+const Slingshot = require('./slingshot')
 
 window.onload = function() {
   // create engine
@@ -48,25 +46,24 @@ window.onload = function() {
 
   // add bodies
   const ground = Ground.createGround(395, 600, 8015, 50, { label: 'ground' })
-  let bird = Bird.createBird()
 
-  const anchor = { x: 220, y: 450 }
-  const elastic = Elastic.createElastic(anchor, bird)
+  const slingshot = Slingshot.createSlingshot(220, 505)
 
   const cliff = Ground.createGround(550, 500, 200, 20, { label: 'cliff', render: { fillStyle: '#060a19' } })
 
-  Composite.add(engine.world, [ground, cliff, bird, elastic]);
+  Composite.add(engine.world, [ground, cliff, slingshot]);
 
   Events.on(engine, 'afterUpdate', function(event) {
     const world = event.source.world
-    const elastic = R.find(R.compose(R.equals('elastic'), R.prop('label')), world.constraints)
+    const elastic = Slingshot.getElastic(world)
+    let bird = elastic.bodyB
 
-    if (mouseConstraint.mouse.button === -1 && (bird.position.x > 250)) {
+    if (mouseConstraint.mouse.button === -1 && (Math.abs(parseInt(bird.position.x) - elastic.pointA.x) > 5 || Math.abs(parseInt(bird.position.y) - elastic.pointA.y) > 5)) {
       Events.trigger(world, 'birdFlying', bird)
 
       bird = Bird.createBird()
       elastic.bodyB = bird
-      Composite.add(world, bird);
+      Composite.add(slingshot, bird);
     }
   })
 

@@ -7,11 +7,11 @@ const Composite = Matter.Composite
 
 const Box = require('./box')
 const BoxGenerator = require('./box-generator')
+const Slingshot = require('./slingshot')
 
 module.exports = {
   removeAllBirds: world => {
-    const elastic = R.find(R.compose(R.equals('elastic'), R.prop('label')), world.constraints)
-    
+    const elastic = Slingshot.getElastic(world)
     // grab all birds
     let birds = R.filter(R.compose(R.test(/bird/i), R.prop('label')), world.bodies)
 
@@ -40,7 +40,7 @@ module.exports = {
         R.prop('bodyB'),
         R.prop('bodyA')
       )(pair)
-
+      
       Box.explode(explodingBox)
       setTimeout(() => {
         Composite.remove(world, explodingBox)

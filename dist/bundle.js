@@ -26501,11 +26501,16 @@ module.exports = {
           xScale: 0.2,
           yScale: 0.2
         }
-      }
+      },
+      collisionFilter: {
+        group: -1,
+        //   category: 0x0002,
+      //   mask: 0x0003,
+      },
     }
   
     let bird = Bodies.polygon(220, 450, 8, 20, birdOptions)
-
+    
     return bird
   }
 }
@@ -26576,23 +26581,6 @@ module.exports = {
   onlyBirdBoxCollision,
 }
 },{"ramda":89}],348:[function(require,module,exports){
-const Matter = require('matter-js')
-
-const Constraint = Matter.Constraint;
-
-module.exports = {
-  createElastic: (anchor, bird) => {
-    let elastic = Constraint.create({
-      pointA: anchor,
-      bodyB: bird,
-      stiffness: 0.05,
-      label: 'elastic',
-    })
-
-    return elastic
-  },
-}
-},{"matter-js":1}],349:[function(require,module,exports){
 const R = require('ramda')
 const Matter = require('matter-js')
 
@@ -26603,13 +26591,13 @@ module.exports = {
     let ground = Bodies.rectangle(x, y, width, height, R.mergeDeepRight({
       label: 'ground',
       isStatic: true,
-      render: { fillStyle: "#F00" },
+      render: { fillStyle: "#060a19" },
     }, options))
 
     return ground
   },
 }
-},{"matter-js":1,"ramda":89}],350:[function(require,module,exports){
+},{"matter-js":1,"ramda":89}],349:[function(require,module,exports){
 const R = require('ramda')
 const Matter = require('matter-js')
 
@@ -26618,7 +26606,6 @@ const Engine = Matter.Engine,
     Runner = Matter.Runner,
     Composites = Matter.Composites,
     Events = Matter.Events,
-    Constraint = Matter.Constraint,
     MouseConstraint = Matter.MouseConstraint,
     Mouse = Matter.Mouse,
     Composite = Matter.Composite,
@@ -26626,14 +26613,13 @@ const Engine = Matter.Engine,
     Bodies = Matter.Bodies;
 
 
-const Elastic = require('./elastic')
 const Ground = require('./ground')
 const Bird = require('./bird')
 const Box = require('./box')
 const BoxGenerator = require('./box-generator')
 const CollisionHelper = require('./collision')
 const WorldHelper = require('./world')
-const compose = require('ramda/src/compose')
+const Slingshot = require('./slingshot')
 
 window.onload = function() {
   // create engine
@@ -26660,25 +26646,24 @@ window.onload = function() {
 
   // add bodies
   const ground = Ground.createGround(395, 600, 8015, 50, { label: 'ground' })
-  let bird = Bird.createBird()
 
-  const anchor = { x: 220, y: 450 }
-  const elastic = Elastic.createElastic(anchor, bird)
+  const slingshot = Slingshot.createSlingshot(220, 505)
 
   const cliff = Ground.createGround(550, 500, 200, 20, { label: 'cliff', render: { fillStyle: '#060a19' } })
 
-  Composite.add(engine.world, [ground, cliff, bird, elastic]);
+  Composite.add(engine.world, [ground, cliff, slingshot]);
 
   Events.on(engine, 'afterUpdate', function(event) {
     const world = event.source.world
-    const elastic = R.find(R.compose(R.equals('elastic'), R.prop('label')), world.constraints)
+    const elastic = Slingshot.getElastic(world)
+    let bird = elastic.bodyB
 
-    if (mouseConstraint.mouse.button === -1 && (bird.position.x > 250)) {
+    if (mouseConstraint.mouse.button === -1 && (Math.abs(parseInt(bird.position.x) - elastic.pointA.x) > 5 || Math.abs(parseInt(bird.position.y) - elastic.pointA.y) > 5)) {
       Events.trigger(world, 'birdFlying', bird)
 
       bird = Bird.createBird()
       elastic.bodyB = bird
-      Composite.add(world, bird);
+      Composite.add(slingshot, bird);
     }
   })
 
@@ -26723,7 +26708,64 @@ window.onload = function() {
 
   Events.trigger(world, 'emptyWorld', world)
 }
-},{"./bird":344,"./box":346,"./box-generator":345,"./collision":347,"./elastic":348,"./ground":349,"./world":351,"matter-js":1,"ramda":89,"ramda/src/compose":34}],351:[function(require,module,exports){
+},{"./bird":344,"./box":346,"./box-generator":345,"./collision":347,"./ground":348,"./slingshot":350,"./world":351,"matter-js":1,"ramda":89}],350:[function(require,module,exports){
+const R = require('ramda')
+const Matter = require('matter-js')
+
+const Bodies = Matter.Bodies;
+const Composite = Matter.Composite;
+const Constraint = Matter.Constraint;
+
+const Bird = require('./bird')
+
+module.exports = {
+  getElastic: world => {
+    const slingshot = R.find(R.compose(R.equals('slingshot'), R.prop('label')), world.composites)
+    const elastic = R.find(R.compose(R.equals('elastic'), R.prop('label')), slingshot.constraints)
+
+    return elastic
+  },
+  createSlingshot: (x, y, options = {}) => {
+    let bird = Bird.createBird()
+
+    let slingshot = Composite.create({
+      label: 'slingshot'
+    })
+
+    const anchor = { x: 220, y: 450 }
+    const elastic = Constraint.create({
+      pointA: anchor,
+      bodyB: bird,
+      stiffness: 0.05,
+      label: 'elastic',
+      render: {
+        type: 'line',
+        lineWidth: 8,
+        strokeStyle: '#060a19',
+      }
+    })
+
+    const slingshotBody = Bodies.rectangle(x, y, 50, 140, R.mergeDeepRight({
+      label: 'slingshotBase',
+      isStatic: true,
+      collisionFilter: {
+        group: -1,
+      },
+      // render: {
+      //   sprite: {
+      //       texture: 'images/slingshot.png',
+      //       xScale: 0.35,
+      //       yScale: 0.35
+      //   }
+      // },
+    }, options))
+
+    slingshot = Composite.add(slingshot, [slingshotBody, elastic, bird])
+
+    return slingshot
+  },
+}
+},{"./bird":344,"matter-js":1,"ramda":89}],351:[function(require,module,exports){
 const R = require('ramda')
 const Matter = require('matter-js')
 
@@ -26733,11 +26775,11 @@ const Composite = Matter.Composite
 
 const Box = require('./box')
 const BoxGenerator = require('./box-generator')
+const Slingshot = require('./slingshot')
 
 module.exports = {
   removeAllBirds: world => {
-    const elastic = R.find(R.compose(R.equals('elastic'), R.prop('label')), world.constraints)
-    
+    const elastic = Slingshot.getElastic(world)
     // grab all birds
     let birds = R.filter(R.compose(R.test(/bird/i), R.prop('label')), world.bodies)
 
@@ -26766,7 +26808,7 @@ module.exports = {
         R.prop('bodyB'),
         R.prop('bodyA')
       )(pair)
-
+      
       Box.explode(explodingBox)
       setTimeout(() => {
         Composite.remove(world, explodingBox)
@@ -26791,4 +26833,4 @@ module.exports = {
     }, 2000)
   }),
 }
-},{"./box":346,"./box-generator":345,"matter-js":1,"ramda":89}]},{},[350]);
+},{"./box":346,"./box-generator":345,"./slingshot":350,"matter-js":1,"ramda":89}]},{},[349]);

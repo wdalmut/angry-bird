@@ -8,7 +8,7 @@ module.exports = {
     let ground = Bodies.rectangle(x, y, width, height, R.mergeDeepRight({
       label: 'ground',
       isStatic: true,
-      render: { fillStyle: "#F00" },
+      render: { fillStyle: "#060a19" },
     }, options))
 
     return ground
