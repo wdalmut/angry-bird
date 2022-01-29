@@ -55,10 +55,13 @@ window.onload = function() {
 
   Events.on(engine, 'afterUpdate', function(event) {
     const world = event.source.world
-    const slingshot = Slingshot.getSlingshot(world)
-    const elastic = Slingshot.getElastic(world)
+    
+    const slingshot = WorldHelper.getSlingshot(world)
+
+    const elastic = Slingshot.getElastic(slingshot)
     let bird = elastic.bodyB
 
+    // TODO: it is possibile to change with Slingshot.isStreched?
     if (mouseConstraint.mouse.button === -1 && (Math.abs(parseInt(bird.position.x) - elastic.pointA.x) > 5 || Math.abs(parseInt(bird.position.y) - elastic.pointA.y) > 5)) {
       Events.trigger(world, 'birdFlying', bird)
 

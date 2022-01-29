@@ -9,9 +9,13 @@ const Box = require('./box')
 const BoxGenerator = require('./box-generator')
 const Slingshot = require('./slingshot')
 
+const getSlingshot = world => R.find(R.compose(R.equals('slingshot'), R.prop('label')), world.composites)
+
 module.exports = {
+  getSlingshot,
   removeAllBirds: world => {
-    const elastic = Slingshot.getElastic(world)
+    const slingshot = getSlingshot(world)
+    const elastic = Slingshot.getElastic(slingshot)
     // grab all birds
     let birds = R.filter(R.compose(R.test(/bird/i), R.prop('label')), world.bodies)
 

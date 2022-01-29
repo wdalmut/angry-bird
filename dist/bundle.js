@@ -26655,10 +26655,13 @@ window.onload = function() {
 
   Events.on(engine, 'afterUpdate', function(event) {
     const world = event.source.world
-    const slingshot = Slingshot.getSlingshot(world)
-    const elastic = Slingshot.getElastic(world)
+    
+    const slingshot = WorldHelper.getSlingshot(world)
+
+    const elastic = Slingshot.getElastic(slingshot)
     let bird = elastic.bodyB
 
+    // TODO: it is possibile to change with Slingshot.isStreched?
     if (mouseConstraint.mouse.button === -1 && (Math.abs(parseInt(bird.position.x) - elastic.pointA.x) > 5 || Math.abs(parseInt(bird.position.y) - elastic.pointA.y) > 5)) {
       Events.trigger(world, 'birdFlying', bird)
 
@@ -26719,17 +26722,20 @@ const Constraint = Matter.Constraint;
 
 const Bird = require('./bird')
 
+const getBird = slingshot => R.find(R.compose(R.test(/bird/i), R.prop('label')), slingshot.bodies)
+const getElastic = slingshot => R.find(R.compose(R.equals('elastic'), R.prop('label')), slingshot.constraints)
 
-const getSlingshot = world => R.find(R.compose(R.equals('slingshot'), R.prop('label')), world.composites)
+// const isStreched = slingshot => {
+//   const bird = getBird(slingshot)
+//   const elastic = getElastic(slingshot)
+
+//   return Math.abs(parseInt(bird.position.x) - elastic.pointA.x) > 5 || Math.abs(parseInt(bird.position.y) - elastic.pointA.y) > 5
+// }
 
 module.exports = {
-  getSlingshot,
-  getElastic: world => {
-    const slingshot = getSlingshot(world)
-    const elastic = R.find(R.compose(R.equals('elastic'), R.prop('label')), slingshot.constraints)
-
-    return elastic
-  },
+  getElastic,
+  getBird,
+  isStreched,
   createSlingshot: (x, y, options = {}) => {
     let bird = Bird.createBird()
 
@@ -26782,9 +26788,13 @@ const Box = require('./box')
 const BoxGenerator = require('./box-generator')
 const Slingshot = require('./slingshot')
 
+const getSlingshot = world => R.find(R.compose(R.equals('slingshot'), R.prop('label')), world.composites)
+
 module.exports = {
+  getSlingshot,
   removeAllBirds: world => {
-    const elastic = Slingshot.getElastic(world)
+    const slingshot = getSlingshot(world)
+    const elastic = Slingshot.getElastic(slingshot)
     // grab all birds
     let birds = R.filter(R.compose(R.test(/bird/i), R.prop('label')), world.bodies)
 

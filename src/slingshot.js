@@ -7,17 +7,20 @@ const Constraint = Matter.Constraint;
 
 const Bird = require('./bird')
 
+const getBird = slingshot => R.find(R.compose(R.test(/bird/i), R.prop('label')), slingshot.bodies)
+const getElastic = slingshot => R.find(R.compose(R.equals('elastic'), R.prop('label')), slingshot.constraints)
 
-const getSlingshot = world => R.find(R.compose(R.equals('slingshot'), R.prop('label')), world.composites)
+// const isStreched = slingshot => {
+//   const bird = getBird(slingshot)
+//   const elastic = getElastic(slingshot)
+
+//   return Math.abs(parseInt(bird.position.x) - elastic.pointA.x) > 5 || Math.abs(parseInt(bird.position.y) - elastic.pointA.y) > 5
+// }
 
 module.exports = {
-  getSlingshot,
-  getElastic: world => {
-    const slingshot = getSlingshot(world)
-    const elastic = R.find(R.compose(R.equals('elastic'), R.prop('label')), slingshot.constraints)
-
-    return elastic
-  },
+  getElastic,
+  getBird,
+  isStreched,
   createSlingshot: (x, y, options = {}) => {
     let bird = Bird.createBird()
 
