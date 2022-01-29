@@ -26578,6 +26578,40 @@ module.exports = {
   onlyBirdBoxCollision,
 }
 },{"ramda":89}],348:[function(require,module,exports){
+const Matter = require('matter-js')
+
+const Constraint = Matter.Constraint;
+
+module.exports = {
+  createElastic: (anchor, bird) => {
+    let elastic = Constraint.create({
+      pointA: anchor,
+      bodyB: bird,
+      stiffness: 0.05,
+      label: 'elastic',
+    })
+
+    return elastic
+  },
+}
+},{"matter-js":1}],349:[function(require,module,exports){
+const R = require('ramda')
+const Matter = require('matter-js')
+
+const Bodies = Matter.Bodies;
+
+module.exports = {
+  createGround: (x, y, width, height, options = {}) => {
+    let ground = Bodies.rectangle(x, y, width, height, R.mergeDeepRight({
+      label: 'ground',
+      isStatic: true,
+      render: { fillStyle: "#F00" },
+    }, options))
+
+    return ground
+  },
+}
+},{"matter-js":1,"ramda":89}],350:[function(require,module,exports){
 const R = require('ramda')
 const Matter = require('matter-js')
 
@@ -26593,6 +26627,9 @@ const Engine = Matter.Engine,
     Detector = Matter.Detector,
     Bodies = Matter.Bodies;
 
+
+const Elastic = require('./elastic')
+const Ground = require('./ground')
 const Bird = require('./bird')
 const Box = require('./box')
 const BoxGenerator = require('./box-generator')
@@ -26624,29 +26661,19 @@ window.onload = function() {
   Runner.run(runner, engine);
 
   // add bodies
-  const ground = Bodies.rectangle(395, 600, 8015, 50, {
-    label: 'ground',
-    isStatic: true,
-    render: { fillStyle: "#F00" },
-  })
+  const ground = Ground.createGround(395, 600, 8015, 50, { label: 'ground' })
   let bird = Bird.createBird()
 
   const anchor = { x: 220, y: 450 }
-  const elastic = Constraint.create({
-    pointA: anchor,
-    bodyB: bird,
-    stiffness: 0.05,
-    label: 'elastic',
-  })
+  const elastic = Elastic.createElastic(anchor, bird)
 
-  const ground2 = Bodies.rectangle(550, 500, 200, 20, { label: 'ground2', isStatic: true, render: { fillStyle: '#060a19' } });
+  const ground2 = Ground.createGround(550, 500, 200, 20, { label: 'ground2', render: { fillStyle: '#060a19' } })
 
   Composite.add(engine.world, [ground, ground2, bird, elastic]);
 
   Events.on(engine, 'afterUpdate', function(event) {
     const world = event.source.world
-    // const elastic = R.find(R.equals('elastic'), R.path(['constraints', 'label']), world)
-    // console.log(elastic)
+    const elastic = R.find(R.compose(R.equals('elastic'), R.prop('label')), world.constraints)
 
     if (mouseConstraint.mouse.button === -1 && (bird.position.x > 250)) {
       Events.trigger(world, 'birdFlying', bird)
@@ -26698,7 +26725,7 @@ window.onload = function() {
 
   Events.trigger(world, 'emptyWorld', world)
 }
-},{"./bird":344,"./box":346,"./box-generator":345,"./collision":347,"./world":349,"matter-js":1,"ramda":89,"ramda/src/compose":34}],349:[function(require,module,exports){
+},{"./bird":344,"./box":346,"./box-generator":345,"./collision":347,"./elastic":348,"./ground":349,"./world":351,"matter-js":1,"ramda":89,"ramda/src/compose":34}],351:[function(require,module,exports){
 const R = require('ramda')
 const Matter = require('matter-js')
 
@@ -26769,4 +26796,4 @@ module.exports = {
     }, 2000)
   }),
 }
-},{"./box":346,"./box-generator":345,"matter-js":1,"ramda":89}]},{},[348]);
+},{"./box":346,"./box-generator":345,"matter-js":1,"ramda":89}]},{},[350]);

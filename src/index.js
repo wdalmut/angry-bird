@@ -13,6 +13,9 @@ const Engine = Matter.Engine,
     Detector = Matter.Detector,
     Bodies = Matter.Bodies;
 
+
+const Elastic = require('./elastic')
+const Ground = require('./ground')
 const Bird = require('./bird')
 const Box = require('./box')
 const BoxGenerator = require('./box-generator')
@@ -44,29 +47,19 @@ window.onload = function() {
   Runner.run(runner, engine);
 
   // add bodies
-  const ground = Bodies.rectangle(395, 600, 8015, 50, {
-    label: 'ground',
-    isStatic: true,
-    render: { fillStyle: "#F00" },
-  })
+  const ground = Ground.createGround(395, 600, 8015, 50, { label: 'ground' })
   let bird = Bird.createBird()
 
   const anchor = { x: 220, y: 450 }
-  const elastic = Constraint.create({
-    pointA: anchor,
-    bodyB: bird,
-    stiffness: 0.05,
-    label: 'elastic',
-  })
+  const elastic = Elastic.createElastic(anchor, bird)
 
-  const ground2 = Bodies.rectangle(550, 500, 200, 20, { label: 'ground2', isStatic: true, render: { fillStyle: '#060a19' } });
+  const ground2 = Ground.createGround(550, 500, 200, 20, { label: 'ground2', render: { fillStyle: '#060a19' } })
 
   Composite.add(engine.world, [ground, ground2, bird, elastic]);
 
   Events.on(engine, 'afterUpdate', function(event) {
     const world = event.source.world
-    // const elastic = R.find(R.equals('elastic'), R.path(['constraints', 'label']), world)
-    // console.log(elastic)
+    const elastic = R.find(R.compose(R.equals('elastic'), R.prop('label')), world.constraints)
 
     if (mouseConstraint.mouse.button === -1 && (bird.position.x > 250)) {
       Events.trigger(world, 'birdFlying', bird)
