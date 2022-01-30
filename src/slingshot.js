@@ -17,7 +17,6 @@ const isStreched = slingshot => {
   const bird = getBird(slingshot)
   const elastic = getElastic(slingshot)
 
-  // return Math.abs(anchor.x - bird.position.x) > 10 || Math.abs(anchor.y - bird.position.y) > 10
   return bird.position.x > (anchor.x + 10)
 }
 

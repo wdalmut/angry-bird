@@ -26511,7 +26511,6 @@ module.exports = {
     }
   
     let bird = Bodies.polygon(220, 450, 8, 20, birdOptions)
-    
     return bird
   }
 }
@@ -26760,7 +26759,6 @@ const isStreched = slingshot => {
   const bird = getBird(slingshot)
   const elastic = getElastic(slingshot)
 
-  // return Math.abs(anchor.x - bird.position.x) > 10 || Math.abs(anchor.y - bird.position.y) > 10
   return bird.position.x > (anchor.x + 10)
 }
 
@@ -26793,9 +26791,9 @@ module.exports = {
       label: 'slingshotBase',
       isStatic: true,
       collisionFilter: {
-        group: Settings.slingshot,
-        category: Settings.slingshot,
-        mask: !Settings.bird,
+        group: Settings.collision.slingshot,
+        category: Settings.collision.slingshot,
+        mask: ~Settings.collision.bird,
       },
       render: {
         sprite: {

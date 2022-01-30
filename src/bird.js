@@ -31,7 +31,6 @@ module.exports = {
     }
   
     let bird = Bodies.polygon(220, 450, 8, 20, birdOptions)
-    
     return bird
   }
 }
