@@ -26,8 +26,8 @@ module.exports = {
     const slingshot = getSlingshot(world)
     const bird = Slingshot.getBird(slingshot)
 
-    Composite.remove(slingshot, bird)
-    Composite.add(world, bird)
+    Composite.remove(slingshot, bird) // the bird leave the slingshot
+    Composite.add(world, bird) // the bird joins the world as a flying object
 
     return bird
   },
