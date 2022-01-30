@@ -9,7 +9,16 @@ const Box = require('./box')
 const BoxGenerator = require('./box-generator')
 const Slingshot = require('./slingshot')
 
+const Settings = require('./settings')
+
 const getSlingshot = world => R.find(R.compose(R.equals('slingshot'), R.prop('label')), world.composites)
+
+const lookAtTheLaunchingBird = render => {
+  Render.lookAt(render, {
+    min: { x: 0, y: 0 },
+    max: { x: Settings.render.width, y: Settings.render.height }
+  });
+}
 
 module.exports = {
   getSlingshot,
@@ -61,20 +70,18 @@ module.exports = {
       }, 600)
     })
   }),
+  lookAtTheLaunchingBird,
   followTheFlyingBird: R.curry((render, bird) => {
     const follow = () => Render.lookAt(render, {
       min: { x: 0, y: 0 },
-      max: { x: 800+bird.position.x-252, y: 600 }
+      max: { x: 800+bird.position.x-252, y: Settings.render.height }
     });
     Events.on(render, 'beforeRender', follow)
 
     setTimeout(() => {
       Events.off(render, 'beforeRender', follow)
       
-      Render.lookAt(render, {
-        min: { x: 0, y: 0 },
-        max: { x: 800, y: 600 }
-      });
+      lookAtTheLaunchingBird(render)
     }, 2000)
   }),
 }

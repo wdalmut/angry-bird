@@ -26480,6 +26480,7 @@ module.exports = zipWith;
 },{"./internal/_curry3.js":110}],344:[function(require,module,exports){
 const Matter = require('matter-js')
 
+const Settings = require('./settings')
 const Bodies = Matter.Bodies;
 
 function getBirdTexture() {
@@ -26503,9 +26504,9 @@ module.exports = {
         }
       },
       collisionFilter: {
-        group: -1,
-        //   category: 0x0002,
-      //   mask: 0x0003,
+        group: Settings.bird,
+        category: Settings.bird,
+        mask: Settings.box | Settings.mouse | Settings.ground,
       },
     }
   
@@ -26514,7 +26515,7 @@ module.exports = {
     return bird
   }
 }
-},{"matter-js":1}],345:[function(require,module,exports){
+},{"./settings":350,"matter-js":1}],345:[function(require,module,exports){
 const Box = require('./box')
 
 module.exports = {
@@ -26532,6 +26533,8 @@ module.exports = {
 },{"./box":346}],346:[function(require,module,exports){
 const R = require('ramda')
 const Matter = require('matter-js')
+
+const Settings = require('./settings')
 
 const Bodies = Matter.Bodies;
 
@@ -26554,6 +26557,11 @@ module.exports = {
             yScale: 0.2
         }
       },
+      collisionFilter: {
+        group: 0x0001,
+        category: Settings.box,
+        mask: Settings.box | Settings.bird | Settings.ground,
+      },
     }, options))
 
     return box
@@ -26562,7 +26570,7 @@ module.exports = {
     box.render = R.assocPath(['sprite', 'texture'], 'images/explode.png', box.render)
   },
 }
-},{"matter-js":1,"ramda":89}],347:[function(require,module,exports){
+},{"./settings":350,"matter-js":1,"ramda":89}],347:[function(require,module,exports){
 const  R = require('ramda')
 
 const onlyBirdBoxCollision = R.compose(
@@ -26582,7 +26590,8 @@ module.exports = {
 }
 },{"ramda":89}],348:[function(require,module,exports){
 const R = require('ramda')
-const Matter = require('matter-js')
+const Matter = require('matter-js');
+const Settings = require('./settings');
 
 const Bodies = Matter.Bodies;
 
@@ -26591,13 +26600,20 @@ module.exports = {
     let ground = Bodies.rectangle(x, y, width, height, R.mergeDeepRight({
       label: 'ground',
       isStatic: true,
-      render: { fillStyle: "#060a19" },
+      collisionFilter: {
+        group: Settings.ground,
+        category: Settings.ground,
+        mask: 0xFFFF,
+      },
+      render: { 
+        fillStyle: "#060a19",
+      },
     }, options))
 
     return ground
   },
 }
-},{"matter-js":1,"ramda":89}],349:[function(require,module,exports){
+},{"./settings":350,"matter-js":1,"ramda":89}],349:[function(require,module,exports){
 const R = require('ramda')
 const Matter = require('matter-js')
 
@@ -26613,13 +26629,14 @@ const Engine = Matter.Engine,
     Bodies = Matter.Bodies;
 
 
+const Settings = require('./settings')
 const Ground = require('./ground')
 const Bird = require('./bird')
 const Box = require('./box')
 const BoxGenerator = require('./box-generator')
 const CollisionHelper = require('./collision')
 const WorldHelper = require('./world')
-const Slingshot = require('./slingshot')
+const Slingshot = require('./slingshot');
 
 window.onload = function() {
   // create engine
@@ -26631,13 +26648,14 @@ window.onload = function() {
     element: document.body,
     engine: engine,
     options: {
-      width: 800,
-      height: 600,
+      width: Settings.render.width,
+      height: Settings.render.height,
       showAngleIndicator: false,
       wireframes: false
     },
   });
 
+  WorldHelper.lookAtTheLaunchingBird(render)
   Render.run(render);
 
   // create runner
@@ -26686,6 +26704,11 @@ window.onload = function() {
   const mouse = Mouse.create(render.canvas),
       mouseConstraint = MouseConstraint.create(engine, {
           mouse: mouse,
+          collisionFilter: {
+            group: Settings.mouse,
+            category: Settings.mouse,
+            mask: Settings.mouse | Settings.bird,
+          },
           constraint: {
               stiffness: 1,
               render: {
@@ -26701,7 +26724,20 @@ window.onload = function() {
 
   Events.trigger(world, 'emptyWorld', world)
 }
-},{"./bird":344,"./box":346,"./box-generator":345,"./collision":347,"./ground":348,"./slingshot":350,"./world":351,"matter-js":1,"ramda":89}],350:[function(require,module,exports){
+},{"./bird":344,"./box":346,"./box-generator":345,"./collision":347,"./ground":348,"./settings":350,"./slingshot":351,"./world":352,"matter-js":1,"ramda":89}],350:[function(require,module,exports){
+
+module.exports = {
+  bird: 0x0001,
+  ground: 0x0002,
+  box: 0x0004,
+  mouse: 0x0008,
+  slingshot: 0x0010,
+  render: {
+    width: 1024,
+    height: 768,
+  }
+}
+},{}],351:[function(require,module,exports){
 const R = require('ramda')
 const Matter = require('matter-js')
 
@@ -26709,7 +26745,9 @@ const Bodies = Matter.Bodies;
 const Composite = Matter.Composite;
 const Constraint = Matter.Constraint;
 
-const Bird = require('./bird')
+const Bird = require('./bird');
+const Settings = require('./settings');
+
 const getAnchor = () =>  ({ x: 220, y: 450 })
 const getBird = slingshot => R.find(R.compose(R.test(/bird/i), R.prop('label')), slingshot.bodies)
 const getElastic = slingshot => R.find(R.compose(R.equals('elastic'), R.prop('label')), slingshot.constraints)
@@ -26719,7 +26757,8 @@ const isStreched = slingshot => {
   const bird = getBird(slingshot)
   const elastic = getElastic(slingshot)
 
-  return Math.abs(anchor.x - bird.position.x) > 10 || Math.abs(anchor.y - bird.position.y) > 10
+  // return Math.abs(anchor.x - bird.position.x) > 10 || Math.abs(anchor.y - bird.position.y) > 10
+  return bird.position.x > (anchor.x + 10)
 }
 
 module.exports = {
@@ -26751,15 +26790,17 @@ module.exports = {
       label: 'slingshotBase',
       isStatic: true,
       collisionFilter: {
-        group: -1,
+        group: Settings.slingshot,
+        category: Settings.slingshot,
+        mask: !Settings.bird,
       },
-      // render: {
-      //   sprite: {
-      //       texture: 'images/slingshot.png',
-      //       xScale: 0.35,
-      //       yScale: 0.35
-      //   }
-      // },
+      render: {
+        sprite: {
+            texture: 'images/slingshot.png',
+            xScale: 0.5,
+            yScale: 0.35
+        }
+      },
     }, options))
 
     slingshot = Composite.add(slingshot, [slingshotBody, elastic, bird])
@@ -26777,7 +26818,7 @@ module.exports = {
     return bird
   },
 }
-},{"./bird":344,"matter-js":1,"ramda":89}],351:[function(require,module,exports){
+},{"./bird":344,"./settings":350,"matter-js":1,"ramda":89}],352:[function(require,module,exports){
 const R = require('ramda')
 const Matter = require('matter-js')
 
@@ -26789,7 +26830,16 @@ const Box = require('./box')
 const BoxGenerator = require('./box-generator')
 const Slingshot = require('./slingshot')
 
+const Settings = require('./settings')
+
 const getSlingshot = world => R.find(R.compose(R.equals('slingshot'), R.prop('label')), world.composites)
+
+const lookAtTheLaunchingBird = render => {
+  Render.lookAt(render, {
+    min: { x: 0, y: 0 },
+    max: { x: Settings.render.width, y: Settings.render.height }
+  });
+}
 
 module.exports = {
   getSlingshot,
@@ -26841,21 +26891,19 @@ module.exports = {
       }, 600)
     })
   }),
+  lookAtTheLaunchingBird,
   followTheFlyingBird: R.curry((render, bird) => {
     const follow = () => Render.lookAt(render, {
       min: { x: 0, y: 0 },
-      max: { x: 800+bird.position.x-252, y: 600 }
+      max: { x: 800+bird.position.x-252, y: Settings.render.height }
     });
     Events.on(render, 'beforeRender', follow)
 
     setTimeout(() => {
       Events.off(render, 'beforeRender', follow)
       
-      Render.lookAt(render, {
-        min: { x: 0, y: 0 },
-        max: { x: 800, y: 600 }
-      });
+      lookAtTheLaunchingBird(render)
     }, 2000)
   }),
 }
-},{"./box":346,"./box-generator":345,"./slingshot":350,"matter-js":1,"ramda":89}]},{},[349]);
+},{"./box":346,"./box-generator":345,"./settings":350,"./slingshot":351,"matter-js":1,"ramda":89}]},{},[349]);

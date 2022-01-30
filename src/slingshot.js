@@ -5,7 +5,9 @@ const Bodies = Matter.Bodies;
 const Composite = Matter.Composite;
 const Constraint = Matter.Constraint;
 
-const Bird = require('./bird')
+const Bird = require('./bird');
+const Settings = require('./settings');
+
 const getAnchor = () =>  ({ x: 220, y: 450 })
 const getBird = slingshot => R.find(R.compose(R.test(/bird/i), R.prop('label')), slingshot.bodies)
 const getElastic = slingshot => R.find(R.compose(R.equals('elastic'), R.prop('label')), slingshot.constraints)
@@ -15,7 +17,8 @@ const isStreched = slingshot => {
   const bird = getBird(slingshot)
   const elastic = getElastic(slingshot)
 
-  return Math.abs(anchor.x - bird.position.x) > 10 || Math.abs(anchor.y - bird.position.y) > 10
+  // return Math.abs(anchor.x - bird.position.x) > 10 || Math.abs(anchor.y - bird.position.y) > 10
+  return bird.position.x > (anchor.x + 10)
 }
 
 module.exports = {
@@ -47,15 +50,17 @@ module.exports = {
       label: 'slingshotBase',
       isStatic: true,
       collisionFilter: {
-        group: -1,
+        group: Settings.slingshot,
+        category: Settings.slingshot,
+        mask: !Settings.bird,
       },
-      // render: {
-      //   sprite: {
-      //       texture: 'images/slingshot.png',
-      //       xScale: 0.35,
-      //       yScale: 0.35
-      //   }
-      // },
+      render: {
+        sprite: {
+            texture: 'images/slingshot.png',
+            xScale: 0.5,
+            yScale: 0.35
+        }
+      },
     }, options))
 
     slingshot = Composite.add(slingshot, [slingshotBody, elastic, bird])

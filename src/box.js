@@ -1,6 +1,8 @@
 const R = require('ramda')
 const Matter = require('matter-js')
 
+const Settings = require('./settings')
+
 const Bodies = Matter.Bodies;
 
 function getBoxTexture() {
@@ -21,6 +23,11 @@ module.exports = {
             xScale: 0.2,
             yScale: 0.2
         }
+      },
+      collisionFilter: {
+        group: 0x0001,
+        category: Settings.box,
+        mask: Settings.box | Settings.bird | Settings.ground,
       },
     }, options))
 

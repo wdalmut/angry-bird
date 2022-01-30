@@ -1,5 +1,6 @@
 const Matter = require('matter-js')
 
+const Settings = require('./settings')
 const Bodies = Matter.Bodies;
 
 function getBirdTexture() {
@@ -23,9 +24,9 @@ module.exports = {
         }
       },
       collisionFilter: {
-        group: -1,
-        //   category: 0x0002,
-      //   mask: 0x0003,
+        group: Settings.bird,
+        category: Settings.bird,
+        mask: Settings.box | Settings.mouse | Settings.ground,
       },
     }
   

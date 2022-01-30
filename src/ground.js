@@ -1,5 +1,6 @@
 const R = require('ramda')
-const Matter = require('matter-js')
+const Matter = require('matter-js');
+const Settings = require('./settings');
 
 const Bodies = Matter.Bodies;
 
@@ -8,7 +9,14 @@ module.exports = {
     let ground = Bodies.rectangle(x, y, width, height, R.mergeDeepRight({
       label: 'ground',
       isStatic: true,
-      render: { fillStyle: "#060a19" },
+      collisionFilter: {
+        group: Settings.ground,
+        category: Settings.ground,
+        mask: 0xFFFF,
+      },
+      render: { 
+        fillStyle: "#060a19",
+      },
     }, options))
 
     return ground

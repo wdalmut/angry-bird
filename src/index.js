@@ -13,13 +13,14 @@ const Engine = Matter.Engine,
     Bodies = Matter.Bodies;
 
 
+const Settings = require('./settings')
 const Ground = require('./ground')
 const Bird = require('./bird')
 const Box = require('./box')
 const BoxGenerator = require('./box-generator')
 const CollisionHelper = require('./collision')
 const WorldHelper = require('./world')
-const Slingshot = require('./slingshot')
+const Slingshot = require('./slingshot');
 
 window.onload = function() {
   // create engine
@@ -31,13 +32,14 @@ window.onload = function() {
     element: document.body,
     engine: engine,
     options: {
-      width: 800,
-      height: 600,
+      width: Settings.render.width,
+      height: Settings.render.height,
       showAngleIndicator: false,
       wireframes: false
     },
   });
 
+  WorldHelper.lookAtTheLaunchingBird(render)
   Render.run(render);
 
   // create runner
@@ -86,6 +88,11 @@ window.onload = function() {
   const mouse = Mouse.create(render.canvas),
       mouseConstraint = MouseConstraint.create(engine, {
           mouse: mouse,
+          collisionFilter: {
+            group: Settings.mouse,
+            category: Settings.mouse,
+            mask: Settings.mouse | Settings.bird,
+          },
           constraint: {
               stiffness: 1,
               render: {
