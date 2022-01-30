@@ -26504,9 +26504,9 @@ module.exports = {
         }
       },
       collisionFilter: {
-        group: Settings.bird,
-        category: Settings.bird,
-        mask: Settings.box | Settings.mouse | Settings.ground,
+        group: Settings.collision.bird,
+        category: Settings.collision.bird,
+        mask: Settings.collision.box | Settings.collision.mouse | Settings.collision.ground,
       },
     }
   
@@ -26558,9 +26558,9 @@ module.exports = {
         }
       },
       collisionFilter: {
-        group: Settings.box,
-        category: Settings.box,
-        mask: Settings.box | Settings.bird | Settings.ground,
+        group: Settings.collision.box,
+        category: Settings.collision.box,
+        mask: Settings.collision.box | Settings.collision.bird | Settings.collision.ground,
       },
     }, options))
 
@@ -26602,8 +26602,8 @@ module.exports = {
       label: 'ground',
       isStatic: true,
       collisionFilter: {
-        group: Settings.ground,
-        category: Settings.ground,
+        group: Settings.collision.ground,
+        category: Settings.collision.ground,
         mask: 0xFFFF,
       },
       render: { 
@@ -26706,9 +26706,9 @@ window.onload = function() {
       mouseConstraint = MouseConstraint.create(engine, {
           mouse: mouse,
           collisionFilter: {
-            group: Settings.mouse,
-            category: Settings.mouse,
-            mask: Settings.mouse | Settings.bird,
+            group: Settings.collision.mouse,
+            category: Settings.collision.mouse,
+            mask: Settings.collision.mouse | Settings.collision.bird,
           },
           constraint: {
               stiffness: 1,
@@ -26728,11 +26728,13 @@ window.onload = function() {
 },{"./bird":344,"./box":346,"./box-generator":345,"./collision":347,"./ground":348,"./settings":350,"./slingshot":351,"./world":352,"matter-js":1,"ramda":89}],350:[function(require,module,exports){
 
 module.exports = {
-  bird: 0x0001,
-  ground: 0x0002,
-  box: 0x0004,
-  mouse: 0x0008,
-  slingshot: 0x0010,
+  collision: {
+    bird: 0x0001,
+    ground: 0x0002,
+    box: 0x0004,
+    mouse: 0x0008,
+    slingshot: 0x0010,
+  },
   render: {
     width: 1024,
     height: 768,

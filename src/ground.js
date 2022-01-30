@@ -10,8 +10,8 @@ module.exports = {
       label: 'ground',
       isStatic: true,
       collisionFilter: {
-        group: Settings.ground,
-        category: Settings.ground,
+        group: Settings.collision.ground,
+        category: Settings.collision.ground,
         mask: 0xFFFF,
       },
       render: { 

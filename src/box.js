@@ -25,9 +25,9 @@ module.exports = {
         }
       },
       collisionFilter: {
-        group: Settings.box,
-        category: Settings.box,
-        mask: Settings.box | Settings.bird | Settings.ground,
+        group: Settings.collision.box,
+        category: Settings.collision.box,
+        mask: Settings.collision.box | Settings.collision.bird | Settings.collision.ground,
       },
     }, options))
 

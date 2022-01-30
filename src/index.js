@@ -89,9 +89,9 @@ window.onload = function() {
       mouseConstraint = MouseConstraint.create(engine, {
           mouse: mouse,
           collisionFilter: {
-            group: Settings.mouse,
-            category: Settings.mouse,
-            mask: Settings.mouse | Settings.bird,
+            group: Settings.collision.mouse,
+            category: Settings.collision.mouse,
+            mask: Settings.collision.mouse | Settings.collision.bird,
           },
           constraint: {
               stiffness: 1,

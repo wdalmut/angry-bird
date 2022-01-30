@@ -50,9 +50,9 @@ module.exports = {
       label: 'slingshotBase',
       isStatic: true,
       collisionFilter: {
-        group: Settings.slingshot,
-        category: Settings.slingshot,
-        mask: !Settings.bird,
+        group: Settings.collision.slingshot,
+        category: Settings.collision.slingshot,
+        mask: ~Settings.collision.bird,
       },
       render: {
         sprite: {
