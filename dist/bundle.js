@@ -26514,7 +26514,7 @@ module.exports = {
     return bird
   }
 }
-},{"./settings":352,"matter-js":1}],345:[function(require,module,exports){
+},{"./settings":353,"matter-js":1}],345:[function(require,module,exports){
 const R = require('ramda')
 const Matter = require('matter-js')
 
@@ -26555,7 +26555,7 @@ module.exports = {
     box.render = R.assocPath(['sprite', 'texture'], 'images/explode.png', box.render)
   },
 }
-},{"./settings":352,"matter-js":1,"ramda":89}],346:[function(require,module,exports){
+},{"./settings":353,"matter-js":1,"ramda":89}],346:[function(require,module,exports){
 const  R = require('ramda')
 
 const onlyBirdBoxCollision = R.compose(
@@ -26598,7 +26598,7 @@ module.exports = {
     return ground
   },
 }
-},{"./settings":352,"matter-js":1,"ramda":89}],348:[function(require,module,exports){
+},{"./settings":353,"matter-js":1,"ramda":89}],348:[function(require,module,exports){
 const R = require('ramda')
 const Matter = require('matter-js')
 
@@ -26712,7 +26712,7 @@ window.onload = function() {
 
   Events.trigger(world, 'nextLevel', world)
 }
-},{"./collision":346,"./ground":347,"./settings":352,"./slingshot":353,"./world":354,"matter-js":1,"ramda":89}],349:[function(require,module,exports){
+},{"./collision":346,"./ground":347,"./settings":353,"./slingshot":354,"./world":355,"matter-js":1,"ramda":89}],349:[function(require,module,exports){
 
 const R = require('ramda')
 const Settings = require('./settings')
@@ -26720,6 +26720,7 @@ const Settings = require('./settings')
 const levels = [
   require('./levels/level-001'),
   require('./levels/level-002'),
+  require('./levels/level-003'),
 ]
 
 const nextLevel = () => {
@@ -26734,7 +26735,7 @@ module.exports = {
   getCurrentLevel: () => Settings.level,
   nextLevel,
 }
-},{"./levels/level-001":350,"./levels/level-002":351,"./settings":352,"ramda":89}],350:[function(require,module,exports){
+},{"./levels/level-001":350,"./levels/level-002":351,"./levels/level-003":352,"./settings":353,"ramda":89}],350:[function(require,module,exports){
 const R = require('ramda')
 const Matter = require('matter-js')
 
@@ -26783,6 +26784,50 @@ module.exports = {
   }
 }
 },{"../box":345,"../ground":347,"matter-js":1,"ramda":89}],352:[function(require,module,exports){
+const R = require('ramda')
+const Matter = require('matter-js')
+
+const Settings = require('../settings')
+
+const Composite = Matter.Composite
+const Bodies = Matter.Bodies
+
+const Box = require('../box')
+const Ground = require('../ground')
+
+module.exports = {
+  createLevel: world => {
+    const wall = Bodies.rectangle(850, 300, 50, 200, {
+      label: 'wall',
+      collisionFilter: {
+        group: Settings.collision.box,
+        category: Settings.collision.box,
+        mask: Settings.collision.box | Settings.collision.bird | Settings.collision.ground,
+      },
+    })
+    const wall2 = Bodies.rectangle(850, 200, 250, 50, {
+      label: 'wall',
+      collisionFilter: {
+        group: Settings.collision.box,
+        category: Settings.collision.box,
+        mask: Settings.collision.box | Settings.collision.bird | Settings.collision.ground,
+      },
+    })
+
+
+    Composite.add(world, [wall, wall2]);
+
+    let boxes = Array.apply(null, new Array(5)).map((_, i) => {
+      x = 750 + Math.random() * 200
+      y = 50 + Math.random() * 100
+      const box = Box.createBox(x, y, {label: `box${i}`})
+      return box
+    })
+
+    Composite.add(world, boxes);
+  }
+}
+},{"../box":345,"../ground":347,"../settings":353,"matter-js":1,"ramda":89}],353:[function(require,module,exports){
 
 const WIDTH = 1024
 const HEIGHT = 768
@@ -26802,7 +26847,7 @@ module.exports = {
     height: HEIGHT,
   }
 }
-},{}],353:[function(require,module,exports){
+},{}],354:[function(require,module,exports){
 const R = require('ramda')
 const Matter = require('matter-js')
 
@@ -26882,7 +26927,7 @@ module.exports = {
     return bird
   },
 }
-},{"./bird":344,"./settings":352,"matter-js":1,"ramda":89}],354:[function(require,module,exports){
+},{"./bird":344,"./settings":353,"matter-js":1,"ramda":89}],355:[function(require,module,exports){
 const R = require('ramda')
 const Matter = require('matter-js')
 
@@ -26985,4 +27030,4 @@ module.exports = {
   lookAtTheLaunchingBird,
   followTheFlyingBird,
 }
-},{"./box":345,"./ground":347,"./level-generator":349,"./settings":352,"./slingshot":353,"matter-js":1,"ramda":89}]},{},[348]);
+},{"./box":345,"./ground":347,"./level-generator":349,"./settings":353,"./slingshot":354,"matter-js":1,"ramda":89}]},{},[348]);

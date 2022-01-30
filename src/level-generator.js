@@ -5,6 +5,7 @@ const Settings = require('./settings')
 const levels = [
   require('./levels/level-001'),
   require('./levels/level-002'),
+  require('./levels/level-003'),
 ]
 
 const nextLevel = () => {
