@@ -25,7 +25,7 @@ module.exports = {
         }
       },
       collisionFilter: {
-        group: 0x0001,
+        group: Settings.box,
         category: Settings.box,
         mask: Settings.box | Settings.bird | Settings.ground,
       },
@@ -34,6 +34,7 @@ module.exports = {
     return box
   },
   explode: (box) => {
+    box.collisionFilter.mask = 0x0000 // exploded boxes doesn't collide anymore 
     box.render = R.assocPath(['sprite', 'texture'], 'images/explode.png', box.render)
   },
 }
