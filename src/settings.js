@@ -1,5 +1,6 @@
 
 module.exports = {
+  level: -1,
   collision: {
     bird: 0x0001,
     ground: 0x0002,

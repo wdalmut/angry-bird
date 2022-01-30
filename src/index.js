@@ -15,9 +15,6 @@ const Engine = Matter.Engine,
 
 const Settings = require('./settings')
 const Ground = require('./ground')
-const Bird = require('./bird')
-const Box = require('./box')
-const BoxGenerator = require('./box-generator')
 const CollisionHelper = require('./collision')
 const WorldHelper = require('./world')
 const Slingshot = require('./slingshot');
@@ -48,12 +45,9 @@ window.onload = function() {
 
   // add bodies
   const ground = Ground.createGround(395, 600, 8015, 50, { label: 'ground' })
-
   const slingshot = Slingshot.createSlingshot(220, 505)
 
-  const cliff = Ground.createGround(550, 500, 200, 20, { label: 'cliff', render: { fillStyle: '#060a19' } })
-
-  Composite.add(engine.world, [ground, cliff, slingshot]);
+  Composite.add(engine.world, [ground, slingshot]);
 
   Events.on(engine, 'afterUpdate', function(event) {
     const world = event.source.world
@@ -78,8 +72,7 @@ window.onload = function() {
     }
   })
 
-  Events.on(world, 'emptyWorld', WorldHelper.removeAllBirds)
-  Events.on(world, 'emptyWorld', WorldHelper.recreateBoxes)
+  Events.on(world, 'emptyWorld', WorldHelper.nextLevel)
   Events.on(world, 'boxExplosion', WorldHelper.onBoxExplosion)
   Events.on(world, 'birdCollision', WorldHelper.onBirdCollision(world))
   Events.on(world, 'birdFlying', WorldHelper.followTheFlyingBird(render))

@@ -26514,22 +26514,7 @@ module.exports = {
     return bird
   }
 }
-},{"./settings":350,"matter-js":1}],345:[function(require,module,exports){
-const Box = require('./box')
-
-module.exports = {
-  generate: num => {
-    let boxes = Array.apply(null, new Array(num)).map((_, i) => {
-      x = 450 + Math.random() * 200
-      y = 200 + Math.random() * 100
-      const box = Box.createBox(x, y, {label: `box${i}`})
-      return box
-    })
-
-    return boxes
-  }
-}
-},{"./box":346}],346:[function(require,module,exports){
+},{"./settings":352,"matter-js":1}],345:[function(require,module,exports){
 const R = require('ramda')
 const Matter = require('matter-js')
 
@@ -26570,7 +26555,7 @@ module.exports = {
     box.render = R.assocPath(['sprite', 'texture'], 'images/explode.png', box.render)
   },
 }
-},{"./settings":350,"matter-js":1,"ramda":89}],347:[function(require,module,exports){
+},{"./settings":352,"matter-js":1,"ramda":89}],346:[function(require,module,exports){
 const  R = require('ramda')
 
 const onlyBirdBoxCollision = R.compose(
@@ -26588,7 +26573,7 @@ const onlyBirdBoxCollision = R.compose(
 module.exports = {
   onlyBirdBoxCollision,
 }
-},{"ramda":89}],348:[function(require,module,exports){
+},{"ramda":89}],347:[function(require,module,exports){
 const R = require('ramda')
 const Matter = require('matter-js');
 const Settings = require('./settings');
@@ -26613,7 +26598,7 @@ module.exports = {
     return ground
   },
 }
-},{"./settings":350,"matter-js":1,"ramda":89}],349:[function(require,module,exports){
+},{"./settings":352,"matter-js":1,"ramda":89}],348:[function(require,module,exports){
 const R = require('ramda')
 const Matter = require('matter-js')
 
@@ -26631,9 +26616,6 @@ const Engine = Matter.Engine,
 
 const Settings = require('./settings')
 const Ground = require('./ground')
-const Bird = require('./bird')
-const Box = require('./box')
-const BoxGenerator = require('./box-generator')
 const CollisionHelper = require('./collision')
 const WorldHelper = require('./world')
 const Slingshot = require('./slingshot');
@@ -26664,12 +26646,9 @@ window.onload = function() {
 
   // add bodies
   const ground = Ground.createGround(395, 600, 8015, 50, { label: 'ground' })
-
   const slingshot = Slingshot.createSlingshot(220, 505)
 
-  const cliff = Ground.createGround(550, 500, 200, 20, { label: 'cliff', render: { fillStyle: '#060a19' } })
-
-  Composite.add(engine.world, [ground, cliff, slingshot]);
+  Composite.add(engine.world, [ground, slingshot]);
 
   Events.on(engine, 'afterUpdate', function(event) {
     const world = event.source.world
@@ -26694,8 +26673,7 @@ window.onload = function() {
     }
   })
 
-  Events.on(world, 'emptyWorld', WorldHelper.removeAllBirds)
-  Events.on(world, 'emptyWorld', WorldHelper.recreateBoxes)
+  Events.on(world, 'emptyWorld', WorldHelper.nextLevel)
   Events.on(world, 'boxExplosion', WorldHelper.onBoxExplosion)
   Events.on(world, 'birdCollision', WorldHelper.onBirdCollision(world))
   Events.on(world, 'birdFlying', WorldHelper.followTheFlyingBird(render))
@@ -26724,9 +26702,79 @@ window.onload = function() {
 
   Events.trigger(world, 'emptyWorld', world)
 }
-},{"./bird":344,"./box":346,"./box-generator":345,"./collision":347,"./ground":348,"./settings":350,"./slingshot":351,"./world":352,"matter-js":1,"ramda":89}],350:[function(require,module,exports){
+},{"./collision":346,"./ground":347,"./settings":352,"./slingshot":353,"./world":354,"matter-js":1,"ramda":89}],349:[function(require,module,exports){
+
+const R = require('ramda')
+const Settings = require('./settings')
+
+const levels = [
+  require('./levels/level-001'),
+  require('./levels/level-002'),
+]
+
+const nextLevel = () => {
+  let nextLevel = R.inc(Settings.level)
+  Settings.level = nextLevel
+
+  return levels[nextLevel]
+}
 
 module.exports = {
+  getLevels: () => levels,
+  getCurrentLevel: () => Settings.level,
+  nextLevel,
+}
+},{"./levels/level-001":350,"./levels/level-002":351,"./settings":352,"ramda":89}],350:[function(require,module,exports){
+const R = require('ramda')
+const Matter = require('matter-js')
+
+const Ground = require('../ground')
+const Box = require('../box')
+
+const Composite = Matter.Composite
+
+
+module.exports = {
+  createLevel: world => {
+    const cliff = Ground.createGround(550, 500, 200, 20, { label: 'cliff', render: { fillStyle: '#060a19' } })
+
+    let boxes = Array.apply(null, new Array(5)).map((_, i) => {
+      x = 450 + Math.random() * 200
+      y = 200 + Math.random() * 100
+      const box = Box.createBox(x, y, {label: `box${i}`})
+      return box
+    })
+
+    Composite.add(world, [cliff].concat(boxes));
+  }
+}
+},{"../box":345,"../ground":347,"matter-js":1,"ramda":89}],351:[function(require,module,exports){
+const R = require('ramda')
+const Matter = require('matter-js')
+
+const Composite = Matter.Composite
+
+const Box = require('../box')
+const Ground = require('../ground')
+
+module.exports = {
+  createLevel: world => {
+    const cliff = Ground.createGround(850, 300, 200, 20, { label: 'cliff', render: { fillStyle: '#060a19' } })
+
+    let boxes = Array.apply(null, new Array(5)).map((_, i) => {
+      x = 750 + Math.random() * 200
+      y = 50 + Math.random() * 100
+      const box = Box.createBox(x, y, {label: `box${i}`})
+      return box
+    })
+
+    Composite.add(world, [cliff].concat(boxes));
+  }
+}
+},{"../box":345,"../ground":347,"matter-js":1,"ramda":89}],352:[function(require,module,exports){
+
+module.exports = {
+  level: -1,
   collision: {
     bird: 0x0001,
     ground: 0x0002,
@@ -26739,7 +26787,7 @@ module.exports = {
     height: 768,
   }
 }
-},{}],351:[function(require,module,exports){
+},{}],353:[function(require,module,exports){
 const R = require('ramda')
 const Matter = require('matter-js')
 
@@ -26819,7 +26867,7 @@ module.exports = {
     return bird
   },
 }
-},{"./bird":344,"./settings":350,"matter-js":1,"ramda":89}],352:[function(require,module,exports){
+},{"./bird":344,"./settings":352,"matter-js":1,"ramda":89}],354:[function(require,module,exports){
 const R = require('ramda')
 const Matter = require('matter-js')
 
@@ -26828,12 +26876,26 @@ const Events = Matter.Events
 const Composite = Matter.Composite
 
 const Box = require('./box')
-const BoxGenerator = require('./box-generator')
+const Ground = require('./ground')
 const Slingshot = require('./slingshot')
 
+const LevelGenerator = require('./level-generator')
 const Settings = require('./settings')
 
 const getSlingshot = world => R.find(R.compose(R.equals('slingshot'), R.prop('label')), world.composites)
+
+const removeAllBirds = world => {
+  const slingshot = getSlingshot(world)
+  const elastic = Slingshot.getElastic(slingshot)
+  // grab all birds
+  let birds = R.filter(R.compose(R.test(/bird/i), R.prop('label')), world.bodies)
+
+  // do not drop the bird connected to the slingshot
+  birds = R.filter(R.compose(R.not, R.equals(elastic.bodyB.label), R.prop('label')), birds)
+
+  // drop birds
+  birds.map(bird => Composite.remove(world, bird)) 
+}
 
 const lookAtTheLaunchingBird = render => {
   Render.lookAt(render, {
@@ -26844,6 +26906,20 @@ const lookAtTheLaunchingBird = render => {
 
 module.exports = {
   getSlingshot,
+  removeAllBirds,
+  nextLevel: world => {
+    // rimuovo tutti gli oggetti
+    const bodies = R.filter(R.compose(R.not, R.equals('ground'), R.prop('label')), world.bodies)
+    R.map(body => Composite.remove(world, body), bodies)
+
+
+    // rimuovo tutti gli oggetti compositi
+    const composites = R.filter(R.compose(R.not, R.equals('slingshot'), R.prop('label')), world.composites)
+    R.map(body => Composite.remove(world, body, true), composites)
+
+    const level = LevelGenerator.nextLevel()
+    level.createLevel(world)
+  },
   launchTheBird: world => {
     const slingshot = getSlingshot(world)
     const bird = Slingshot.getBird(slingshot)
@@ -26853,29 +26929,12 @@ module.exports = {
 
     return bird
   },
-  removeAllBirds: world => {
-    const slingshot = getSlingshot(world)
-    const elastic = Slingshot.getElastic(slingshot)
-    // grab all birds
-    let birds = R.filter(R.compose(R.test(/bird/i), R.prop('label')), world.bodies)
-
-    // do not drop the bird connected to the slingshot
-    birds = R.filter(R.compose(R.not, R.equals(elastic.bodyB.label), R.prop('label')), birds)
-
-    // drop birds
-    birds.map(bird => Composite.remove(world, bird)) 
-  },
   onBoxExplosion: world => {
     const boxes = R.filter(R.compose(R.test(/box/i), R.prop('label')), world.bodies)
     
     if (R.length(boxes) === 0) {
       Events.trigger(world, 'emptyWorld', world)
     }
-  },
-  recreateBoxes: world => {
-    let boxes = BoxGenerator.generate(5)
-
-    Composite.add(world, boxes); 
   },
   onBirdCollision: R.curry((world, event) => {
     event.pairs.map(pair => {
@@ -26907,4 +26966,4 @@ module.exports = {
     }, 2000)
   }),
 }
-},{"./box":346,"./box-generator":345,"./settings":350,"./slingshot":351,"matter-js":1,"ramda":89}]},{},[349]);
+},{"./box":345,"./ground":347,"./level-generator":349,"./settings":352,"./slingshot":353,"matter-js":1,"ramda":89}]},{},[348]);

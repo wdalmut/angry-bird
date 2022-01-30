@@ -6,12 +6,26 @@ const Events = Matter.Events
 const Composite = Matter.Composite
 
 const Box = require('./box')
-const BoxGenerator = require('./box-generator')
+const Ground = require('./ground')
 const Slingshot = require('./slingshot')
 
+const LevelGenerator = require('./level-generator')
 const Settings = require('./settings')
 
 const getSlingshot = world => R.find(R.compose(R.equals('slingshot'), R.prop('label')), world.composites)
+
+const removeAllBirds = world => {
+  const slingshot = getSlingshot(world)
+  const elastic = Slingshot.getElastic(slingshot)
+  // grab all birds
+  let birds = R.filter(R.compose(R.test(/bird/i), R.prop('label')), world.bodies)
+
+  // do not drop the bird connected to the slingshot
+  birds = R.filter(R.compose(R.not, R.equals(elastic.bodyB.label), R.prop('label')), birds)
+
+  // drop birds
+  birds.map(bird => Composite.remove(world, bird)) 
+}
 
 const lookAtTheLaunchingBird = render => {
   Render.lookAt(render, {
@@ -22,6 +36,20 @@ const lookAtTheLaunchingBird = render => {
 
 module.exports = {
   getSlingshot,
+  removeAllBirds,
+  nextLevel: world => {
+    // rimuovo tutti gli oggetti
+    const bodies = R.filter(R.compose(R.not, R.equals('ground'), R.prop('label')), world.bodies)
+    R.map(body => Composite.remove(world, body), bodies)
+
+
+    // rimuovo tutti gli oggetti compositi
+    const composites = R.filter(R.compose(R.not, R.equals('slingshot'), R.prop('label')), world.composites)
+    R.map(body => Composite.remove(world, body, true), composites)
+
+    const level = LevelGenerator.nextLevel()
+    level.createLevel(world)
+  },
   launchTheBird: world => {
     const slingshot = getSlingshot(world)
     const bird = Slingshot.getBird(slingshot)
@@ -31,29 +59,12 @@ module.exports = {
 
     return bird
   },
-  removeAllBirds: world => {
-    const slingshot = getSlingshot(world)
-    const elastic = Slingshot.getElastic(slingshot)
-    // grab all birds
-    let birds = R.filter(R.compose(R.test(/bird/i), R.prop('label')), world.bodies)
-
-    // do not drop the bird connected to the slingshot
-    birds = R.filter(R.compose(R.not, R.equals(elastic.bodyB.label), R.prop('label')), birds)
-
-    // drop birds
-    birds.map(bird => Composite.remove(world, bird)) 
-  },
   onBoxExplosion: world => {
     const boxes = R.filter(R.compose(R.test(/box/i), R.prop('label')), world.bodies)
     
     if (R.length(boxes) === 0) {
       Events.trigger(world, 'emptyWorld', world)
     }
-  },
-  recreateBoxes: world => {
-    let boxes = BoxGenerator.generate(5)
-
-    Composite.add(world, boxes); 
   },
   onBirdCollision: R.curry((world, event) => {
     event.pairs.map(pair => {
