@@ -26654,6 +26654,16 @@ window.onload = function() {
     const world = event.source.world
     const slingshot = WorldHelper.getSlingshot(world)
 
+    // mouse wheel click then return to the bird
+    if (mouseConstraint.mouse.button === 1) {
+      WorldHelper.lookAtTheLaunchingBird(render)
+    }
+
+    // mouse right click to see the whole map
+    if (mouseConstraint.mouse.button === 2) {
+      WorldHelper.lookAtTheWholeMap(render)
+    }
+
     if (mouseConstraint.mouse.button === -1 && Slingshot.isStreched(slingshot)) {
       let launchingBird = WorldHelper.launchTheBird(world)
       Events.trigger(world, 'birdFlying', launchingBird)
@@ -26673,34 +26683,34 @@ window.onload = function() {
     }
   })
 
-  Events.on(world, 'emptyWorld', WorldHelper.nextLevel)
+  Events.on(world, 'nextLevel', WorldHelper.nextLevel)
+  Events.on(world, 'emptyWorld', WorldHelper.clearWorld)
   Events.on(world, 'boxExplosion', WorldHelper.onBoxExplosion)
   Events.on(world, 'birdCollision', WorldHelper.onBirdCollision(world))
   Events.on(world, 'birdFlying', WorldHelper.followTheFlyingBird(render))
 
   // add mouse control
-  const mouse = Mouse.create(render.canvas),
-      mouseConstraint = MouseConstraint.create(engine, {
-          mouse: mouse,
-          collisionFilter: {
-            group: Settings.collision.mouse,
-            category: Settings.collision.mouse,
-            mask: Settings.collision.mouse | Settings.collision.bird,
-          },
-          constraint: {
-              stiffness: 1,
-              render: {
-                  visible: false
-              }
-          }
-      });
+  const mouse = Mouse.create(render.canvas)
+  const mouseConstraint = MouseConstraint.create(engine, {
+    mouse: mouse,
+    collisionFilter: {
+      group: Settings.collision.mouse,
+      category: Settings.collision.mouse,
+      mask: Settings.collision.mouse | Settings.collision.bird,
+    },
+    constraint: {
+      stiffness: 1,
+      render: {
+        visible: false
+      }
+    }
+  });
 
   Composite.add(world, mouseConstraint);
-
   // keep the mouse in sync with rendering
   render.mouse = mouse;
 
-  Events.trigger(world, 'emptyWorld', world)
+  Events.trigger(world, 'nextLevel', world)
 }
 },{"./collision":346,"./ground":347,"./settings":352,"./slingshot":353,"./world":354,"matter-js":1,"ramda":89}],349:[function(require,module,exports){
 
@@ -26760,6 +26770,7 @@ const Ground = require('../ground')
 module.exports = {
   createLevel: world => {
     const cliff = Ground.createGround(850, 300, 200, 20, { label: 'cliff', render: { fillStyle: '#060a19' } })
+    Composite.add(world, [cliff]);
 
     let boxes = Array.apply(null, new Array(5)).map((_, i) => {
       x = 750 + Math.random() * 200
@@ -26768,10 +26779,13 @@ module.exports = {
       return box
     })
 
-    Composite.add(world, [cliff].concat(boxes));
+    Composite.add(world, boxes);
   }
 }
 },{"../box":345,"../ground":347,"matter-js":1,"ramda":89}],352:[function(require,module,exports){
+
+const WIDTH = 1024
+const HEIGHT = 768
 
 module.exports = {
   level: -1,
@@ -26783,8 +26797,9 @@ module.exports = {
     slingshot: 0x0010,
   },
   render: {
-    width: 1024,
-    height: 768,
+    ratio: WIDTH/HEIGHT,
+    width: WIDTH,
+    height: HEIGHT,
   }
 }
 },{}],353:[function(require,module,exports){
@@ -26884,19 +26899,6 @@ const Settings = require('./settings')
 
 const getSlingshot = world => R.find(R.compose(R.equals('slingshot'), R.prop('label')), world.composites)
 
-const removeAllBirds = world => {
-  const slingshot = getSlingshot(world)
-  const elastic = Slingshot.getElastic(slingshot)
-  // grab all birds
-  let birds = R.filter(R.compose(R.test(/bird/i), R.prop('label')), world.bodies)
-
-  // do not drop the bird connected to the slingshot
-  birds = R.filter(R.compose(R.not, R.equals(elastic.bodyB.label), R.prop('label')), birds)
-
-  // drop birds
-  birds.map(bird => Composite.remove(world, bird)) 
-}
-
 const lookAtTheLaunchingBird = render => {
   Render.lookAt(render, {
     min: { x: 0, y: 0 },
@@ -26904,19 +26906,46 @@ const lookAtTheLaunchingBird = render => {
   });
 }
 
+const lookAtTheWholeMap = render => {
+  Render.lookAt(render, {
+    min: { x: 0, y: 0 },
+    max: { x: Settings.render.width*3, y: Settings.render.height/3 }
+  });
+}
+
+const followTheFlyingBird = R.curry((render, bird) => {
+  const follow = () => Render.lookAt(render, {
+    min: { x: 0, y: 0 },
+    max: { x: 800+bird.position.x-252, y: Settings.render.height }
+  });
+  Events.on(render, 'beforeRender', follow)
+
+  setTimeout(() => {
+    Events.off(render, 'beforeRender', follow)
+    
+    lookAtTheLaunchingBird(render)
+  }, 2000)
+})
+
+const clearWorld = world => {
+  // rimuovo tutti gli oggetti
+  const bodies = R.filter(R.compose(R.not, R.equals('ground'), R.prop('label')), world.bodies)
+  R.map(body => Composite.remove(world, body), bodies)
+
+
+  // rimuovo tutti gli oggetti compositi
+  const composites = R.filter(R.compose(R.not, R.equals('slingshot'), R.prop('label')), world.composites)
+  R.map(body => Composite.remove(world, body, true), composites)
+
+  // rimuovo tutti i vincoli
+  const constraints = R.filter(R.compose(R.not, R.equals('Mouse Constraint'), R.prop('label')), world.constraints)
+  R.map(body => Composite.remove(world, body, true), constraints)
+}
+
 module.exports = {
   getSlingshot,
-  removeAllBirds,
+  clearWorld,
   nextLevel: world => {
-    // rimuovo tutti gli oggetti
-    const bodies = R.filter(R.compose(R.not, R.equals('ground'), R.prop('label')), world.bodies)
-    R.map(body => Composite.remove(world, body), bodies)
-
-
-    // rimuovo tutti gli oggetti compositi
-    const composites = R.filter(R.compose(R.not, R.equals('slingshot'), R.prop('label')), world.composites)
-    R.map(body => Composite.remove(world, body, true), composites)
-
     const level = LevelGenerator.nextLevel()
     level.createLevel(world)
   },
@@ -26933,7 +26962,8 @@ module.exports = {
     const boxes = R.filter(R.compose(R.test(/box/i), R.prop('label')), world.bodies)
     
     if (R.length(boxes) === 0) {
-      Events.trigger(world, 'emptyWorld', world)
+      clearWorld(world)
+      Events.trigger(world, 'nextLevel', world)
     }
   },
   onBirdCollision: R.curry((world, event) => {
@@ -26951,19 +26981,8 @@ module.exports = {
       }, 600)
     })
   }),
+  lookAtTheWholeMap,
   lookAtTheLaunchingBird,
-  followTheFlyingBird: R.curry((render, bird) => {
-    const follow = () => Render.lookAt(render, {
-      min: { x: 0, y: 0 },
-      max: { x: 800+bird.position.x-252, y: Settings.render.height }
-    });
-    Events.on(render, 'beforeRender', follow)
-
-    setTimeout(() => {
-      Events.off(render, 'beforeRender', follow)
-      
-      lookAtTheLaunchingBird(render)
-    }, 2000)
-  }),
+  followTheFlyingBird,
 }
 },{"./box":345,"./ground":347,"./level-generator":349,"./settings":352,"./slingshot":353,"matter-js":1,"ramda":89}]},{},[348]);

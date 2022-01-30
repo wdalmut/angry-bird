@@ -9,6 +9,7 @@ const Ground = require('../ground')
 module.exports = {
   createLevel: world => {
     const cliff = Ground.createGround(850, 300, 200, 20, { label: 'cliff', render: { fillStyle: '#060a19' } })
+    Composite.add(world, [cliff]);
 
     let boxes = Array.apply(null, new Array(5)).map((_, i) => {
       x = 750 + Math.random() * 200
@@ -17,6 +18,6 @@ module.exports = {
       return box
     })
 
-    Composite.add(world, [cliff].concat(boxes));
+    Composite.add(world, boxes);
   }
 }

@@ -1,4 +1,7 @@
 
+const WIDTH = 1024
+const HEIGHT = 768
+
 module.exports = {
   level: -1,
   collision: {
@@ -9,7 +12,8 @@ module.exports = {
     slingshot: 0x0010,
   },
   render: {
-    width: 1024,
-    height: 768,
+    ratio: WIDTH/HEIGHT,
+    width: WIDTH,
+    height: HEIGHT,
   }
 }

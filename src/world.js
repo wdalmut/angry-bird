@@ -14,19 +14,6 @@ const Settings = require('./settings')
 
 const getSlingshot = world => R.find(R.compose(R.equals('slingshot'), R.prop('label')), world.composites)
 
-const removeAllBirds = world => {
-  const slingshot = getSlingshot(world)
-  const elastic = Slingshot.getElastic(slingshot)
-  // grab all birds
-  let birds = R.filter(R.compose(R.test(/bird/i), R.prop('label')), world.bodies)
-
-  // do not drop the bird connected to the slingshot
-  birds = R.filter(R.compose(R.not, R.equals(elastic.bodyB.label), R.prop('label')), birds)
-
-  // drop birds
-  birds.map(bird => Composite.remove(world, bird)) 
-}
-
 const lookAtTheLaunchingBird = render => {
   Render.lookAt(render, {
     min: { x: 0, y: 0 },
@@ -34,19 +21,46 @@ const lookAtTheLaunchingBird = render => {
   });
 }
 
+const lookAtTheWholeMap = render => {
+  Render.lookAt(render, {
+    min: { x: 0, y: 0 },
+    max: { x: Settings.render.width*3, y: Settings.render.height/3 }
+  });
+}
+
+const followTheFlyingBird = R.curry((render, bird) => {
+  const follow = () => Render.lookAt(render, {
+    min: { x: 0, y: 0 },
+    max: { x: 800+bird.position.x-252, y: Settings.render.height }
+  });
+  Events.on(render, 'beforeRender', follow)
+
+  setTimeout(() => {
+    Events.off(render, 'beforeRender', follow)
+    
+    lookAtTheLaunchingBird(render)
+  }, 2000)
+})
+
+const clearWorld = world => {
+  // rimuovo tutti gli oggetti
+  const bodies = R.filter(R.compose(R.not, R.equals('ground'), R.prop('label')), world.bodies)
+  R.map(body => Composite.remove(world, body), bodies)
+
+
+  // rimuovo tutti gli oggetti compositi
+  const composites = R.filter(R.compose(R.not, R.equals('slingshot'), R.prop('label')), world.composites)
+  R.map(body => Composite.remove(world, body, true), composites)
+
+  // rimuovo tutti i vincoli
+  const constraints = R.filter(R.compose(R.not, R.equals('Mouse Constraint'), R.prop('label')), world.constraints)
+  R.map(body => Composite.remove(world, body, true), constraints)
+}
+
 module.exports = {
   getSlingshot,
-  removeAllBirds,
+  clearWorld,
   nextLevel: world => {
-    // rimuovo tutti gli oggetti
-    const bodies = R.filter(R.compose(R.not, R.equals('ground'), R.prop('label')), world.bodies)
-    R.map(body => Composite.remove(world, body), bodies)
-
-
-    // rimuovo tutti gli oggetti compositi
-    const composites = R.filter(R.compose(R.not, R.equals('slingshot'), R.prop('label')), world.composites)
-    R.map(body => Composite.remove(world, body, true), composites)
-
     const level = LevelGenerator.nextLevel()
     level.createLevel(world)
   },
@@ -63,7 +77,8 @@ module.exports = {
     const boxes = R.filter(R.compose(R.test(/box/i), R.prop('label')), world.bodies)
     
     if (R.length(boxes) === 0) {
-      Events.trigger(world, 'emptyWorld', world)
+      clearWorld(world)
+      Events.trigger(world, 'nextLevel', world)
     }
   },
   onBirdCollision: R.curry((world, event) => {
@@ -81,18 +96,7 @@ module.exports = {
       }, 600)
     })
   }),
+  lookAtTheWholeMap,
   lookAtTheLaunchingBird,
-  followTheFlyingBird: R.curry((render, bird) => {
-    const follow = () => Render.lookAt(render, {
-      min: { x: 0, y: 0 },
-      max: { x: 800+bird.position.x-252, y: Settings.render.height }
-    });
-    Events.on(render, 'beforeRender', follow)
-
-    setTimeout(() => {
-      Events.off(render, 'beforeRender', follow)
-      
-      lookAtTheLaunchingBird(render)
-    }, 2000)
-  }),
+  followTheFlyingBird,
 }

@@ -53,6 +53,16 @@ window.onload = function() {
     const world = event.source.world
     const slingshot = WorldHelper.getSlingshot(world)
 
+    // mouse wheel click then return to the bird
+    if (mouseConstraint.mouse.button === 1) {
+      WorldHelper.lookAtTheLaunchingBird(render)
+    }
+
+    // mouse right click to see the whole map
+    if (mouseConstraint.mouse.button === 2) {
+      WorldHelper.lookAtTheWholeMap(render)
+    }
+
     if (mouseConstraint.mouse.button === -1 && Slingshot.isStreched(slingshot)) {
       let launchingBird = WorldHelper.launchTheBird(world)
       Events.trigger(world, 'birdFlying', launchingBird)
@@ -72,32 +82,32 @@ window.onload = function() {
     }
   })
 
-  Events.on(world, 'emptyWorld', WorldHelper.nextLevel)
+  Events.on(world, 'nextLevel', WorldHelper.nextLevel)
+  Events.on(world, 'emptyWorld', WorldHelper.clearWorld)
   Events.on(world, 'boxExplosion', WorldHelper.onBoxExplosion)
   Events.on(world, 'birdCollision', WorldHelper.onBirdCollision(world))
   Events.on(world, 'birdFlying', WorldHelper.followTheFlyingBird(render))
 
   // add mouse control
-  const mouse = Mouse.create(render.canvas),
-      mouseConstraint = MouseConstraint.create(engine, {
-          mouse: mouse,
-          collisionFilter: {
-            group: Settings.collision.mouse,
-            category: Settings.collision.mouse,
-            mask: Settings.collision.mouse | Settings.collision.bird,
-          },
-          constraint: {
-              stiffness: 1,
-              render: {
-                  visible: false
-              }
-          }
-      });
+  const mouse = Mouse.create(render.canvas)
+  const mouseConstraint = MouseConstraint.create(engine, {
+    mouse: mouse,
+    collisionFilter: {
+      group: Settings.collision.mouse,
+      category: Settings.collision.mouse,
+      mask: Settings.collision.mouse | Settings.collision.bird,
+    },
+    constraint: {
+      stiffness: 1,
+      render: {
+        visible: false
+      }
+    }
+  });
 
   Composite.add(world, mouseConstraint);
-
   // keep the mouse in sync with rendering
   render.mouse = mouse;
 
-  Events.trigger(world, 'emptyWorld', world)
+  Events.trigger(world, 'nextLevel', world)
 }
