@@ -26655,19 +26655,12 @@ window.onload = function() {
 
   Events.on(engine, 'afterUpdate', function(event) {
     const world = event.source.world
-    
     const slingshot = WorldHelper.getSlingshot(world)
 
-    const elastic = Slingshot.getElastic(slingshot)
-    let bird = elastic.bodyB
-
-    // TODO: it is possibile to change with Slingshot.isStreched?
-    if (mouseConstraint.mouse.button === -1 && (Math.abs(parseInt(bird.position.x) - elastic.pointA.x) > 5 || Math.abs(parseInt(bird.position.y) - elastic.pointA.y) > 5)) {
-      Events.trigger(world, 'birdFlying', bird)
-
-      bird = Bird.createBird()
-      elastic.bodyB = bird
-      Composite.add(slingshot, bird);
+    if (mouseConstraint.mouse.button === -1 && Slingshot.isStreched(slingshot)) {
+      let launchingBird = WorldHelper.launchTheBird(world)
+      Events.trigger(world, 'birdFlying', launchingBird)
+      let newlyAttachedBird = Slingshot.attachBird(slingshot)
     }
   })
 
@@ -26685,11 +26678,8 @@ window.onload = function() {
 
   Events.on(world, 'emptyWorld', WorldHelper.removeAllBirds)
   Events.on(world, 'emptyWorld', WorldHelper.recreateBoxes)
-  
   Events.on(world, 'boxExplosion', WorldHelper.onBoxExplosion)
-
   Events.on(world, 'birdCollision', WorldHelper.onBirdCollision(world))
-
   Events.on(world, 'birdFlying', WorldHelper.followTheFlyingBird(render))
 
   // add mouse control
@@ -26709,7 +26699,6 @@ window.onload = function() {
   // keep the mouse in sync with rendering
   render.mouse = mouse;
 
-
   Events.trigger(world, 'emptyWorld', world)
 }
 },{"./bird":344,"./box":346,"./box-generator":345,"./collision":347,"./ground":348,"./slingshot":350,"./world":351,"matter-js":1,"ramda":89}],350:[function(require,module,exports){
@@ -26721,18 +26710,20 @@ const Composite = Matter.Composite;
 const Constraint = Matter.Constraint;
 
 const Bird = require('./bird')
-
+const getAnchor = () =>  ({ x: 220, y: 450 })
 const getBird = slingshot => R.find(R.compose(R.test(/bird/i), R.prop('label')), slingshot.bodies)
 const getElastic = slingshot => R.find(R.compose(R.equals('elastic'), R.prop('label')), slingshot.constraints)
 
-// const isStreched = slingshot => {
-//   const bird = getBird(slingshot)
-//   const elastic = getElastic(slingshot)
+const isStreched = slingshot => {
+  const anchor = getAnchor()
+  const bird = getBird(slingshot)
+  const elastic = getElastic(slingshot)
 
-//   return Math.abs(parseInt(bird.position.x) - elastic.pointA.x) > 5 || Math.abs(parseInt(bird.position.y) - elastic.pointA.y) > 5
-// }
+  return Math.abs(anchor.x - bird.position.x) > 10 || Math.abs(anchor.y - bird.position.y) > 10
+}
 
 module.exports = {
+  getAnchor,
   getElastic,
   getBird,
   isStreched,
@@ -26743,7 +26734,7 @@ module.exports = {
       label: 'slingshot'
     })
 
-    const anchor = { x: 220, y: 450 }
+    const anchor = getAnchor()
     const elastic = Constraint.create({
       pointA: anchor,
       bodyB: bird,
@@ -26775,6 +26766,16 @@ module.exports = {
 
     return slingshot
   },
+  attachBird: (slingshot) => {
+    const elastic = getElastic(slingshot)
+    const bird = Bird.createBird()
+
+    elastic.bodyB = bird
+    
+    Composite.add(slingshot, bird);
+
+    return bird
+  },
 }
 },{"./bird":344,"matter-js":1,"ramda":89}],351:[function(require,module,exports){
 const R = require('ramda')
@@ -26792,6 +26793,15 @@ const getSlingshot = world => R.find(R.compose(R.equals('slingshot'), R.prop('la
 
 module.exports = {
   getSlingshot,
+  launchTheBird: world => {
+    const slingshot = getSlingshot(world)
+    const bird = Slingshot.getBird(slingshot)
+
+    Composite.remove(slingshot, bird)
+    Composite.add(world, bird)
+
+    return bird
+  },
   removeAllBirds: world => {
     const slingshot = getSlingshot(world)
     const elastic = Slingshot.getElastic(slingshot)

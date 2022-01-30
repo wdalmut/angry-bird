@@ -6,18 +6,20 @@ const Composite = Matter.Composite;
 const Constraint = Matter.Constraint;
 
 const Bird = require('./bird')
-
+const getAnchor = () =>  ({ x: 220, y: 450 })
 const getBird = slingshot => R.find(R.compose(R.test(/bird/i), R.prop('label')), slingshot.bodies)
 const getElastic = slingshot => R.find(R.compose(R.equals('elastic'), R.prop('label')), slingshot.constraints)
 
-// const isStreched = slingshot => {
-//   const bird = getBird(slingshot)
-//   const elastic = getElastic(slingshot)
+const isStreched = slingshot => {
+  const anchor = getAnchor()
+  const bird = getBird(slingshot)
+  const elastic = getElastic(slingshot)
 
-//   return Math.abs(parseInt(bird.position.x) - elastic.pointA.x) > 5 || Math.abs(parseInt(bird.position.y) - elastic.pointA.y) > 5
-// }
+  return Math.abs(anchor.x - bird.position.x) > 10 || Math.abs(anchor.y - bird.position.y) > 10
+}
 
 module.exports = {
+  getAnchor,
   getElastic,
   getBird,
   isStreched,
@@ -28,7 +30,7 @@ module.exports = {
       label: 'slingshot'
     })
 
-    const anchor = { x: 220, y: 450 }
+    const anchor = getAnchor()
     const elastic = Constraint.create({
       pointA: anchor,
       bodyB: bird,
@@ -59,5 +61,15 @@ module.exports = {
     slingshot = Composite.add(slingshot, [slingshotBody, elastic, bird])
 
     return slingshot
+  },
+  attachBird: (slingshot) => {
+    const elastic = getElastic(slingshot)
+    const bird = Bird.createBird()
+
+    elastic.bodyB = bird
+    
+    Composite.add(slingshot, bird);
+
+    return bird
   },
 }

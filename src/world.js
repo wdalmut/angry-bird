@@ -13,6 +13,15 @@ const getSlingshot = world => R.find(R.compose(R.equals('slingshot'), R.prop('la
 
 module.exports = {
   getSlingshot,
+  launchTheBird: world => {
+    const slingshot = getSlingshot(world)
+    const bird = Slingshot.getBird(slingshot)
+
+    Composite.remove(slingshot, bird)
+    Composite.add(world, bird)
+
+    return bird
+  },
   removeAllBirds: world => {
     const slingshot = getSlingshot(world)
     const elastic = Slingshot.getElastic(slingshot)

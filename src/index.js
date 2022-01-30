@@ -55,19 +55,12 @@ window.onload = function() {
 
   Events.on(engine, 'afterUpdate', function(event) {
     const world = event.source.world
-    
     const slingshot = WorldHelper.getSlingshot(world)
 
-    const elastic = Slingshot.getElastic(slingshot)
-    let bird = elastic.bodyB
-
-    // TODO: it is possibile to change with Slingshot.isStreched?
-    if (mouseConstraint.mouse.button === -1 && (Math.abs(parseInt(bird.position.x) - elastic.pointA.x) > 5 || Math.abs(parseInt(bird.position.y) - elastic.pointA.y) > 5)) {
-      Events.trigger(world, 'birdFlying', bird)
-
-      bird = Bird.createBird()
-      elastic.bodyB = bird
-      Composite.add(slingshot, bird);
+    if (mouseConstraint.mouse.button === -1 && Slingshot.isStreched(slingshot)) {
+      let launchingBird = WorldHelper.launchTheBird(world)
+      Events.trigger(world, 'birdFlying', launchingBird)
+      let newlyAttachedBird = Slingshot.attachBird(slingshot)
     }
   })
 
@@ -85,11 +78,8 @@ window.onload = function() {
 
   Events.on(world, 'emptyWorld', WorldHelper.removeAllBirds)
   Events.on(world, 'emptyWorld', WorldHelper.recreateBoxes)
-  
   Events.on(world, 'boxExplosion', WorldHelper.onBoxExplosion)
-
   Events.on(world, 'birdCollision', WorldHelper.onBirdCollision(world))
-
   Events.on(world, 'birdFlying', WorldHelper.followTheFlyingBird(render))
 
   // add mouse control
@@ -108,7 +98,6 @@ window.onload = function() {
 
   // keep the mouse in sync with rendering
   render.mouse = mouse;
-
 
   Events.trigger(world, 'emptyWorld', world)
 }
